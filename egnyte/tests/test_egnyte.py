@@ -4,10 +4,10 @@ import unittest
 from egnyte import client
 from egnyte import const 
 
-USERNAME = "vijayendra"
-DOMAIN = "bapte"
-PASSWORD = "egnyte123#"
-API_KEY = "7wwwxg5n5j2awwkcxedtwe36"
+USERNAME = "user"
+DOMAIN = "domain"
+PASSWORD = "password"
+API_KEY = "your-api-key"
 
 class TestRequestsAuth(unittest.TestCase):
     def test_oauth_str(self):
