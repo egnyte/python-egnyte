@@ -126,9 +126,9 @@ class EgnyteClient(object):
         return r
 
     def create_link(self, path, kind, accessibility,
-                    recipients=None, send_email=False, message=None,
-                    copy_me=False, notify=False, link_to_current=False,
-                    expiry=None, add_filename=False,
+                    recipients=None, send_email=None, message=None,
+                    copy_me=None, notify=None, link_to_current=None,
+                    expiry=None, add_filename=None,
                     ):
         assert kind in const.LINK_KIND_LIST
         assert accessibility in const.LINK_ACCESSIBILITY_LIST
@@ -139,12 +139,16 @@ class EgnyteClient(object):
             "path": path,
             "type": kind,
             "accessibility": accessibility,
-            "sendEmail": send_email,
-            "copyMe": copy_me,
-            "notify": notify,
-            "addFilename": add_filename,
             }
-        if kind == const.LINK_KIND_FILE:
+        if send_email is not None:
+            data['sendEmail'] = send_email
+        if copy_me is not None:
+            data['copyMe'] = copy_me
+        if notify is not None:
+            data['notify'] = notify
+        if add_filename is not None:
+            data['addFilename'] = add_filename
+        if kind == const.LINK_KIND_FILE and link_to_current is not None:
             data["linkToCurrent"] = link_to_current
         if recipients:
             data['recipients'] = recipients
