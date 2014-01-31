@@ -17,7 +17,10 @@ class EzShare(object):
         self.folderpath = self.DEFAULT_EZSHARE % self.__dict__
 
     def get_access_token(self):
-        access_token = keyring.get_password("egnyte", self.user)
+        try:
+            access_token = keyring.get_password("egnyte", self.user)
+        except ValueError, e:
+            raise SystemExit("%s" % e)
         if access_token is None:
             password = getpass.getpass("Enter password: ")
             api_key = raw_input("Enter Api Key: ")
