@@ -1,8 +1,8 @@
 # Egnyte SDK
 
-# HOWTO:
+# HOWTO
 
-## Install:
+## Install
 
     $ easy_install egnyte-0.1-py2.7.egg
 
@@ -18,7 +18,7 @@
       -f FILEPATH, --filepath=FILEPATH
                             path of file which you want to share
 
-## Upload file:
+## Upload file
 
     $ ezshare -u vijayendra@bapte -f /tmp/test.txt 
 
@@ -27,6 +27,6 @@
     File uploaded: /tmp/test.txt
     Ezshare link: https://bapte.egnyte.com/h-s/20140131/d75c88db9d2d48e0
 
-## Tests:
+## Tests
 
 Follow ./egnyte/tests/*.py to understand how to work with egnyte SDK
