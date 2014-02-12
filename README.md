@@ -6,6 +6,10 @@
 
     $ easy_install egnyte-0.1-py2.7.egg
 
+## Get API key
+
+   Register on https://developers.egnyte.com/member/register to
+   get API key for your Egnyte account.
 
 ## Get help
 
