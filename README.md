@@ -8,8 +8,7 @@
 
 ## Get API key
 
-Register on https://developers.egnyte.com/member/register to
-get API key for your Egnyte account.
+Register on https://developers.egnyte.com/member/register to get API key for your Egnyte account.
 
 ## Get help
 
