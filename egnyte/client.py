@@ -6,6 +6,11 @@ from requests.auth import AuthBase
 
 from . import const
 
+## TODO
+## List links api: https://developers.egnyte.com/docs/Egnyte_Link_API_Documentation 
+## User management api: https://developers.egnyte.com/docs/User_Management_API_Documentation
+## Report management api: https://developers.egnyte.com/docs/Egnyte_Audit_Reporting_API_v1
+
 class RequestsAuth(AuthBase):
     """
     Sending oAuth access_token in auth header
@@ -173,7 +178,6 @@ class EgnyteClient(object):
         r = requests.get(url, auth=self.auth)
         return r
 
-    ## def links(self):
-    ##     ##TODO
-    ##     pass
-    
+    def links(self):
+        ## TODO
+        pass
