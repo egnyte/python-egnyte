@@ -33,3 +33,10 @@ Register on https://developers.egnyte.com/member/register to get API key for you
 ## Tests
 
 Follow ./egnyte/tests/*.py to understand how to work with egnyte SDK
+
+# TODO
+
+1. List Links api (last one): https://developers.egnyte.com/docs/Egnyte_Link_API_Documentation 
+2. User management api: https://developers.egnyte.com/docs/User_Management_API_Documentation
+3. Report management api: https://developers.egnyte.com/docs/Egnyte_Audit_Reporting_API_v1
+
