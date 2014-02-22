@@ -59,9 +59,9 @@ class EgnyteClient(object):
     ACTION_LIST = 'list_content'
     ITER_CHUNK_SIZE = 10 * 1024 # bytes
 
-    def __init__(self, domain, access_token):
+    def __init__(self, domain, auth):
         self.domain = domain
-        self.auth = RequestsAuth(access_token)
+        self.auth = auth
 
     def get_url(self, uri, **kw):
         kw['server'] = const.SERVER

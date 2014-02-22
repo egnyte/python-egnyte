@@ -4,10 +4,15 @@ import unittest
 from egnyte import client
 from egnyte import const 
 
-USERNAME = "user"
-DOMAIN = "domain"
-PASSWORD = "password"
-API_KEY = "your-api-key"
+USERNAME = "vijayendra"
+DOMAIN = "bapte"
+PASSWORD = "egnyte123#"
+API_KEY = "7wwwxg5n5j2awwkcxedtwe36"
+
+## USERNAME = "user"
+## DOMAIN = "domain"
+## PASSWORD = "password"
+## API_KEY = "your-api-key"
 
 class TestRequestsAuth(unittest.TestCase):
     def test_oauth_str(self):
@@ -41,7 +46,8 @@ class BaseEgnyte(unittest.TestCase):
     def setUp(self):
         oauth = client.EgnyteOAuth(DOMAIN, USERNAME, PASSWORD, API_KEY)
         access_token = oauth.get_access_token().json()['access_token']
-        self.egnyte_obj = client.EgnyteClient(DOMAIN, access_token)
+        auth = client.RequestsAuth(access_token)
+        self.egnyte_obj = client.EgnyteClient(DOMAIN, auth)
         self.folderpath = r'/Shared/test'
         self.filepath = self.folderpath + '/test.txt'
         self.destination = r'/Shared/abc'
