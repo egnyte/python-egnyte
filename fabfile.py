@@ -53,7 +53,7 @@ def test():
     Run basic unittests
     """
     with lcd(env.package_name):
-        local("nosetests -v --with-coverage --nocapture --cover-package=%(package_name)s" % env)
+        local("nosetests -v --tc-file tests/local_config.ini --with-coverage --nocapture --cover-package=%(package_name)s" % env)
         #local("nosetests -v --with-coverage --cover-package=%(package_name)s" % env)
 
 def reinstall():

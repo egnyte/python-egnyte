@@ -25,14 +25,15 @@ class EgnyteOAuth(object):
     ACCESS_TOKEN_URI = "/puboauth/token"
     GRANT_TYPE = "password"
 
-    def __init__(self, domain, username, password, api_key):
+    def __init__(self, domain, username, password, api_key, server="egnyte.com"):
         self.domain = domain
         self.username = username
         self.password = password
         self.api_key = api_key
+        self.server = server
 
     def get_url(self, uri, **kw):
-        kw['server'] = const.SERVER
+        kw['server'] = self.server
         kw['domain'] = self.domain
         return const.BASE_URL % kw + uri % kw
 
@@ -59,12 +60,13 @@ class EgnyteClient(object):
     ACTION_LIST = 'list_content'
     ITER_CHUNK_SIZE = 10 * 1024 # bytes
 
-    def __init__(self, domain, auth):
+    def __init__(self, domain, auth, server=const.SERVER):
         self.domain = domain
         self.auth = auth
+        self.server = server
 
     def get_url(self, uri, **kw):
-        kw['server'] = const.SERVER
+        kw['server'] = self.server
         kw['domain'] = self.domain
         return const.BASE_URL % kw + uri % kw
 

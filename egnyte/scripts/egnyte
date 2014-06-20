@@ -1,0 +1,32 @@
+import plac
+import getpass
+
+from egnyte import client
+
+class EgnyteCMD(object):
+    commands = 'get_token',
+    @plac.annotations(
+        username=("username", 'positional', None, str),
+        domain=("domain", 'positional', None, str),
+        api_key=("api_key", 'positional', None, str),
+        server=("server", 'option', None, str),
+        )
+    def get_token(self, username, domain, api_key, server="egnyte.com"):
+        password = getpass.getpass("Enter the password: ")
+        oauth = client.EgnyteOAuth(
+            domain,
+            username,
+            password,
+            api_key,
+            )
+        r = oauth.get_access_token()
+        if r.status_code == 200:
+            data = r.json()
+            print 'Access Token: ', data['access_token']
+        elif r.status_code == 429:
+            print 'Access Token is already generated. Please try after sometime.'
+        else:
+            print 'Failed to generate Access Token: %s', r.data()
+
+if __name__ == "__main__":
+    plac.Interpreter.call(EgnyteCMD)

@@ -10,3 +10,4 @@ eggs
 parts
 src/*.egg-info
 .coverage
+local_config.ini
