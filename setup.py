@@ -11,7 +11,7 @@ setup(
     description='Egnyte SDK',
     zip_safe=False,
     packages=["egnyte", ],
-    scripts=["egnyte/scripts/ezshare", "egnyte/scripts/egnyte"],
+    scripts=["egnyte/scripts/egnyte"],
     include_package_data=True,
     install_requires = ["requests",
                         "fabric",

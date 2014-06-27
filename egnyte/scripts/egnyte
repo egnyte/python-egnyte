@@ -1,17 +1,39 @@
+#!/usr/bin/env python
+import os
 import plac
+import shelve
 import getpass
 
 from egnyte import client
+from egnyte import const
+
+DEFAULT_SHELVE = os.path.expanduser('~/.egnyte')
 
 class EgnyteCMD(object):
-    commands = 'get_token',
+    commands = 'init', 'show', 'share', 'get_access_token'
+    
     @plac.annotations(
         username=("username", 'positional', None, str),
         domain=("domain", 'positional', None, str),
         api_key=("api_key", 'positional', None, str),
+        token=("token", 'option', None, str),
         server=("server", 'option', None, str),
         )
-    def get_token(self, username, domain, api_key, server="egnyte.com"):
+    def init(self, username, domain, api_key, token=None, server="egnyte.com"):
+        sh = shelve.open(DEFAULT_SHELVE)
+        try:
+            if token is None:
+                token = self.get_access_token(username, domain, api_key, server)
+            sh['config'] = {
+                'username': username,
+                'domain': domain,
+                'server': server,
+                'token': token,
+                }
+        finally:
+            sh.close()
+
+    def get_access_token(self, username, domain, api_key, server="egnyte.com"):
         password = getpass.getpass("Enter the password: ")
         oauth = client.EgnyteOAuth(
             domain,
@@ -22,11 +44,64 @@ class EgnyteCMD(object):
         r = oauth.get_access_token()
         if r.status_code == 200:
             data = r.json()
-            print 'Access Token: ', data['access_token']
+            token = data['access_token']
+            print 'Access Token: ', token
         elif r.status_code == 429:
             print 'Access Token is already generated. Please try after sometime.'
         else:
             print 'Failed to generate Access Token: %s', r.data()
+        return token
+
+    def show(self):
+        from pprint import pprint
+        sh = shelve.open(DEFAULT_SHELVE)
+        try:
+            for k, v in sh['config'].items():
+                print "%-10s => %s" % (k, v)
+        finally:
+            sh.close()
+
+    @plac.annotations(
+        filepath=("filepath", 'positional', None, str),
+        folderpath=("filepath", 'option', None, str),
+        )
+    def share(self, filepath, folderpath=None):
+        sh = shelve.open(DEFAULT_SHELVE)
+        try:
+            if folderpath is None:
+                folderpath = "/Private/%s/ezshare" % sh['config']['username']
+            auth = client.RequestsAuth(sh['config']['token'])
+            egnyte_obj = client.EgnyteClient(sh['config']['domain'], auth)
+            r = egnyte_obj.create_folder(folderpath)
+            if r.status_code == 201:
+                print "Created: %s" % folderpath
+            elif r.status_code == 405:
+                # folder already exists
+                # XXX status_code is not reported properly
+                pass
+            elif r.status_code == 403:
+                # XXX status_code is not reported properly
+                pass
+            else:
+                raise SystemExit("Unable to create folder: %s" % folderpath)
+            filename = os.path.basename(filepath)
+            cfsfilepath = folderpath + u'/' + filename
+            with open(filepath, 'rb') as fptr:
+                r = egnyte_obj.put_file(cfsfilepath, fptr)
+                if r.status_code != 200:
+                    raise SystemExit("Unable to upload file")
+
+            r = egnyte_obj.create_link(
+                cfsfilepath,
+                const.LINK_KIND_FILE,
+                const.LINK_ACCESSIBILITY_DOMAIN,
+                )
+            if r.status_code != 200:
+                raise SystemExit("Ezshare link failed")
+            data = r.json()
+            print "Hotshare Link: %s" % data['links'][0]['url']
+        finally:
+            sh.close()
 
 if __name__ == "__main__":
     plac.Interpreter.call(EgnyteCMD)

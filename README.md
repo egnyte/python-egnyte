@@ -4,35 +4,62 @@
 
 ## Install
 
-    $ easy_install egnyte-0.1-py2.7.egg
+    $ easy_install egnyte-0.2-py2.7.egg
 
 ## Get API key
 
 Register on https://developers.egnyte.com/member/register to get API key for your Egnyte account.
+This key is required to generate egnyte oAuth token.
 
-## Get help
+## How to use it?
 
-    $ ezshare -h
-    Usage: ezshare [options]
+You need it first use `init` command to initialize egnyte sdk. Then verify that
+all config is correct using `show` command. Then you can share files using
+`share` command
 
-    Options:
-      -h, --help            show this help message and exit
-      -u USER, --user=USER  specify user name e.g myname@domain
-      -f FILEPATH, --filepath=FILEPATH
-                            path of file which you want to share
+    $ egnyte init vbapte egnyte <api-key>
+    Enter the password: <my egnyte account password>
+    $ egnyte show
+    $ egnyte share /path/to/file
 
-## Upload file
+## How to get help?
 
-    $ ezshare -u vijayendra@bapte -f /tmp/test.txt 
+    $ egnyte -h
 
-    Enter password: <YOUR-EGNYTE-PASSWORD>
-    Enter Api Key: <YOUR-API-KEY>
-    File uploaded: /tmp/test.txt
-    Ezshare link: https://bapte.egnyte.com/h-s/20140131/d75c88db9d2d48e0
+    special commands
+    ================
+    .last_tb
+
+    custom commands
+    ===============
+    get_access_token  help  init  share  show
+
+    $ egnyte init -h
+    usage: egnyte init [-h] [-token None] [-server egnyte.com] username domain api_key
+
+    positional arguments:
+      username            username
+      domain              domain
+      api_key             api_key
+
+    optional arguments:
+      -h, --help          show this help message and exit
+      -token None         token
+      -server egnyte.com  server
+
+    $ egnyte share -h
+    usage: egnyte share [-h] [-folderpath None] filepath
+
+    positional arguments:
+      filepath          filepath
+
+    optional arguments:
+      -h, --help        show this help message and exit
+      -folderpath None  filepath
 
 ## Tests
 
-Follow ./egnyte/tests/*.py to understand how to work with egnyte SDK
+    $ fab test
 
 # TODO
 
