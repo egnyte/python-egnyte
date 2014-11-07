@@ -11,3 +11,7 @@ parts
 src/*.egg-info
 .coverage
 local_config.ini
+_trial_temp
+egnyte.egg-info
+__pycache__
+
