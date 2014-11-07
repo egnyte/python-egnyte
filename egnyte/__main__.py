@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import print_function
+
 import os
 import getpass
 import plac
@@ -44,18 +46,18 @@ class EgnyteCMD(object):
         if r.status_code == 200:
             data = r.json()
             token = data['access_token']
-            print 'Access Token: ', token
+            print('Access Token: ', token)
         elif r.status_code == 429:
-            print 'Access Token is already generated. Please try after sometime.'
+            print('Access Token is already generated. Please try after sometime.')
         else:
-            print 'Failed to generate Access Token: %s', r.data()
+            print('Failed to generate Access Token: %s', r.data())
         return token
 
     def show(self):
         sh = shelve.open(DEFAULT_SHELVE)
         try:
             for k, v in sh['config'].items():
-                print "%-10s => %s" % (k, v)
+                print("%-10s => %s" % (k, v))
         finally:
             sh.close()
 

@@ -14,7 +14,7 @@ setup(
     license='MIT',
     description='Egnyte Public API SDK',
     zip_safe=True,
-    packages=["egnyte"],
+    packages=["egnyte", "egnyte.tests", "egnyte.tests.integration"],
     url='https://developers.egnyte.com/',
     include_package_data=True,
     install_requires=[
