@@ -4,7 +4,13 @@ import datetime
 import requests
 from requests.auth import AuthBase
 
-from . import const
+from . import configuration, const
+
+class EgnyteException(Exception):
+    pass
+
+class AuthorizationException(EgnyteException):
+    pass
 
 class RequestsAuth(AuthBase):
     """
@@ -21,33 +27,40 @@ class RequestsAuth(AuthBase):
         r.headers['Authorization'] = self._oauth_str()
         return r
 
-class EgnyteOAuth(object):
+class Base(object):
+    def __init__(self, config=None):
+        if not isinstance(config, dict):
+            config = configuration.load(config)
+        self.config = config
+        domain = self.config['domain']
+        if '.' not in domain:
+            domain = domain + ".egnyte.com"
+        self._url_prefix = "https://%s/" % domain
+
+    def get_url(self, path, **kw):
+        return (self._url_prefix + path.lstrip('/')) % kw
+
+class EgnyteOAuth(Base):
     ACCESS_TOKEN_URI = "/puboauth/token"
     GRANT_TYPE = "password"
-
-    def __init__(self, domain, username, password, api_key, server="egnyte.com"):
-        self.domain = domain
-        self.username = username
-        self.password = password
-        self.api_key = api_key
-        self.server = server
-
-    def get_url(self, uri, **kw):
-        kw['server'] = self.server
-        kw['domain'] = self.domain
-        return const.BASE_URL % kw + uri % kw
 
     def get_access_token(self):
         url = self.get_url(self.ACCESS_TOKEN_URI)
         data = dict(
-            client_id = self.api_key,
-            username = self.username,
-            password = self.password,
+            client_id = self.config['api_key'],
+            username = self.config['login'],
+            password = self.config['password'],
             grant_type = self.GRANT_TYPE,
-            )
-        return requests.post(url, data=data)
+        )
+        r = requests.post(url, data=data)
+        if r.status_code == 200:
+            return r.json()['access_token']
+        elif r.status_code == 429:
+            raise AuthorizationException('Access Token is already generated. Please try after sometime.')
+        else:
+            raise AuthorizationException('Failed to generate Access Token: %s' % r.text)
     
-class EgnyteClient(object):
+class EgnyteClient(Base):
     USER_INFO_URI = r"/pubapi/v1/userinfo"
     FOLDER_URI = r"/pubapi/v1/fs%(folderpath)s"
     FILE_URI = r"/pubapi/v1/fs-content/%(filepath)s"
@@ -60,15 +73,9 @@ class EgnyteClient(object):
     ACTION_LIST = 'list_content'
     ITER_CHUNK_SIZE = 10 * 1024 # bytes
 
-    def __init__(self, domain, auth, server=const.SERVER):
-        self.domain = domain
-        self.auth = auth
-        self.server = server
-
-    def get_url(self, uri, **kw):
-        kw['server'] = self.server
-        kw['domain'] = self.domain
-        return const.BASE_URL % kw + uri % kw
+    def __init__(self, config):
+        super(EgnyteClient, self).__init__(config)
+        self.auth = RequestsAuth(config['access_token'])
 
     def encode_path(self, path):
         return str(urllib.quote(path.encode('utf-8'), '/'))
@@ -78,7 +85,7 @@ class EgnyteClient(object):
         url = self.get_url(self.USER_INFO_URI)
         r = requests.get(url, auth=self.auth, headers=headers)
         return r
-    
+
     def create_folder(self, folderpath):
         url = self.get_url(self.FOLDER_URI, folderpath=self.encode_path(folderpath))
         folderpath = self.encode_path(folderpath)
@@ -169,7 +176,7 @@ class EgnyteClient(object):
         url = self.get_url(self.LINK_URI2, id=id)
         r = requests.delete(url, auth=self.auth)
         return r
-        
+
     def link_details(self, id):
         url = self.get_url(self.LINK_URI2, id=id)
         r = requests.get(url, auth=self.auth)

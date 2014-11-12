@@ -9,8 +9,8 @@ except ImportError:
 setup(
     name='egnyte',
     version='0.3',
-    author=u'Vijayendra Bapte, Maciej Szumocki',
-    author_email=u'api-support@egnyte.com',
+    author='Vijayendra Bapte, Maciej Szumocki',
+    author_email='api-support@egnyte.com',
     license='MIT',
     description='Egnyte Public API SDK',
     zip_safe=True,
@@ -19,7 +19,6 @@ setup(
     include_package_data=True,
     install_requires=[
         "requests>=2.2.1",
-        "plac>=0.9.1",
     ],
     classifiers=[
         "Programming Language :: Python",

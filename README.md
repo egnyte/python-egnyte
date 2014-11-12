@@ -1,37 +1,31 @@
 # Egnyte SDK
 
-# HOWTO
+This is the official Python client library for Egnyte.com Public APIs.
 
-## Get API key
+# Getting an API key
 
 Register on https://developers.egnyte.com/member/register to get API key for your Egnyte account.
 This key is required to generate egnyte oAuth token.
 
+# Running tests
 
-## Tests
+Check doc/TESTS.md
 
-Tests can be run with nose or trial directly on the egnyte package, or from setup.py:
+# Command line
 
-python setup.py test
+Check doc/COMMANDS.md
 
-or
+# Examples
 
-python setyp.py nosetests
+examples subdirectory contauns example code that should give you good idea of how the client library can be used.
 
-Integration tests will be skipped unless you create ~/.egnyte/test_config.ini
+# Helping with development
 
-You can create this file manually (use egnyte/tests/config.ini as a template) or after installing
-with following command:
+First, report any problems you find to https://developers.egnyte.com/forum/ or api-support@egnyte.com
 
-python -m egnyte config tests <api key> <username>:<password>@<domain>
+If you'd like to fix something yourself, please fork this repository, commit the fixes and updates to tests,
+then set up a pull request with information what you're fixing.
 
-
-## Command line
-
-python -m egnyte config set <api key> <username>:<password>@<domain>
-python -m egnyte config show
-python -m egnyte test
-
-
-
+Please remember to assign copyright of your fixes to Egnyte or make them public domain so we can legally
+merge them.
 
