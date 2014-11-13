@@ -8,6 +8,8 @@ class TestFolder(TestCase):
         self.folderpath = r'/Shared/integration_test_python'
         self.destination = r'/Shared/integration_test_python2'
         self.filepath = self.folderpath + '/test.txt'
+
+    def tearDown(self):
         try:
             self.client.delete(self.folderpath)
         except exc.NotFound:
@@ -16,9 +18,6 @@ class TestFolder(TestCase):
             self.client.delete(self.destination)
         except exc.NotFound:
             pass
-
-    def tearDown(self):
-        pass
 
     def test_folder(self):
         self.client.create_folder(self.folderpath)
@@ -60,5 +59,3 @@ class TestFolder(TestCase):
         link = self.client.link_details(data['links'][0]['id'])
         self.assertEqual(link['url'], url)
         self.client.link_delete(data['links'][0]['id'])
-
-

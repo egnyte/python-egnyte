@@ -1,7 +1,8 @@
 import datetime
 
 from egnyte.exc import default, created
-from egnyte.base import Base
+from egnyte.base import Session
+from egnyte.files import FileDownload
 
 class Const:
     LINK_KIND_FILE = "file"
@@ -24,7 +25,7 @@ class Const:
     ]
 
 
-class EgnyteClient(Base):
+class EgnyteClient(Session):
     USER_INFO_URI = r"pubapi/v1/userinfo"
     FOLDER_URI = r"pubapi/v1/fs%(folderpath)s"
     FILE_URI = r"pubapi/v1/fs-content/%(filepath)s"
@@ -34,7 +35,6 @@ class EgnyteClient(Base):
     ACTION_ADD_FOLDER = 'add_folder'
     ACTION_MOVE = 'move'
     ACTION_COPY = 'copy'
-    ITER_CHUNK_SIZE = 16 * 1024  # bytes
 
     def userinfo(self):
         return default.check_json_response(self.GET(self.get_url(self.USER_INFO_URI)))
@@ -48,8 +48,7 @@ class EgnyteClient(Base):
         url = self.get_url(self.FILE_URI, filepath=filepath)
         r = self.GET(url, stream=True)
         default.check_response(r)
-        for data in r.iter_content(self.ITER_CHUNK_SIZE):
-            yield data
+        return FileDownload(r)
 
     def put_file(self, filepath, fptr):
         url = self.get_url(self.FILE_URI, filepath=filepath)
@@ -63,14 +62,12 @@ class EgnyteClient(Base):
 
     def move(self, folderpath, destination):
         url = self.get_url(self.FOLDER_URI, folderpath=folderpath)
-        data = {'action': self.ACTION_MOVE, 'destination': destination}
-        r = self.POST(url, data)
+        r = self.POST(url, {'action': self.ACTION_MOVE, 'destination': destination})
         default.check_response(r)
 
     def copy(self, folderpath, destination):
         url = self.get_url(self.FOLDER_URI, folderpath=folderpath)
-        data = {'action': self.ACTION_COPY, 'destination': destination}
-        r = self.POST(url, data)
+        r = self.POST(url, {'action': self.ACTION_COPY, 'destination': destination})
         default.check_response(r)
 
     def list_content(self, folderpath):

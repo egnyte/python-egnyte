@@ -4,21 +4,19 @@ except ImportError:
     from StringIO import StringIO
 
 from config import TestCase
-from egnyte import client, exc
+from egnyte import exc
 
 class TestFile(TestCase):
     def setUp(self):
         super(TestFile, self).setUp()
         self.folderpath = r'/Shared/integration_test_python'
         self.filepath = self.folderpath + '/test.txt'
+
+    def tearDown(self):
         try:
             self.client.delete(self.folderpath)
         except exc.NotFound:
             pass
-
-
-    def tearDown(self):
-        self.client.delete(self.folderpath)
 
     def test_create_file(self):
         source = StringIO('vijayendra')
@@ -28,8 +26,7 @@ class TestFile(TestCase):
         self.client.put_file(self.filepath, source)
 
         dest = StringIO()
-        for chunk in self.client.get_file(self.filepath):
-            dest.write(chunk)
+        self.client.get_file(self.filepath).write_to(dest)
 
         dest.seek(0)
         source.seek(0)
