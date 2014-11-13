@@ -4,7 +4,7 @@ except ImportError:
     from StringIO import StringIO
 
 from config import TestCase
-from egnyte import client
+from egnyte import client, exc
 
 class TestFile(TestCase):
     def setUp(self):
@@ -13,7 +13,7 @@ class TestFile(TestCase):
         self.filepath = self.folderpath + '/test.txt'
         try:
             self.client.delete(self.folderpath)
-        except client.NotFound:
+        except exc.NotFound:
             pass
 
 

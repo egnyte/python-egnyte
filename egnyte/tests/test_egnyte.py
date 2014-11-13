@@ -1,11 +1,11 @@
 import unittest
 
-from egnyte import client
+from egnyte import client, base, exc
 
 
 class TestRequestsAuth(unittest.TestCase):
     def test_oauth(self):
-        auth = client.oauth('abc')
+        auth = base.oauth('abc')
         class FakeRequest:
             pass
         r = FakeRequest()

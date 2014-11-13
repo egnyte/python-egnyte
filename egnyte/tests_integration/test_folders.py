@@ -1,4 +1,4 @@
-from egnyte import client
+from egnyte import client, exc
 from config import TestCase
 
 
@@ -10,11 +10,11 @@ class TestFolder(TestCase):
         self.filepath = self.folderpath + '/test.txt'
         try:
             self.client.delete(self.folderpath)
-        except client.NotFound:
+        except exc.NotFound:
             pass
         try:
             self.client.delete(self.destination)
-        except client.NotFound:
+        except exc.NotFound:
             pass
 
     def tearDown(self):
@@ -22,16 +22,16 @@ class TestFolder(TestCase):
 
     def test_folder(self):
         self.client.create_folder(self.folderpath)
-        with self.assertRaises(client.Forbidden):
+        with self.assertRaises(exc.InsufficientPermissions):
             self.client.create_folder(self.folderpath)
         self.client.delete(self.folderpath)
-        with self.assertRaises(client.NotFound):
+        with self.assertRaises(exc.NotFound):
             self.client.delete(self.folderpath)
 
     def test_folder_move(self):
         self.client.create_folder(self.folderpath)
         self.client.move(self.folderpath, self.destination)
-        with self.assertRaises(client.NotFound):
+        with self.assertRaises(exc.NotFound):
             self.client.delete(self.folderpath)
         self.client.delete(self.destination)
 
