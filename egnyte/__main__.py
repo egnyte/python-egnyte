@@ -18,6 +18,9 @@ parser_config = subparsers.add_parser('config', help='commands related to config
 parser_token = subparsers.add_parser('token', help='generate a new access token and print it')
 parser_token.set_defaults(command='token')
 
+parser_test = subparsers.add_parser('test', help='test if config is correct (connects to service)')
+parser_test.set_defaults(command='test')
+
 subparsers_config = parser_config.add_subparsers()
 
 parser_config_show = subparsers_config.add_parser('show', help="show configuration")
@@ -50,6 +53,8 @@ for p in (parser_config_create, parser_config_update):
 class Commands(object):
     _config = None
     config_keys = ('login', 'password', 'domain', 'api_key', 'access_token')
+    STATUS_CMD_NOT_FOUND = 1
+    STATUS_API_ERROR = 2
 
     def load_config(self):
         if self._config is None:
@@ -66,19 +71,18 @@ class Commands(object):
 
     def run(self):
         method = getattr(self, "cmd_%s" % self.args.command, None)
-        if method is not None:
-            method()
-        else:
+        if method is None:
             print("Command '%s' not implemented yet" % self.args.command.replace('_', ' '))
-            sys.exit(1)
+            return self.STATUS_CMD_NOT_FOUND
+        try:
+            return method()
+        except client.EgnyteException as e:
+            print(repr(e))
+            return self.STATUS_API_ERROR
 
     def get_access_token(self):
         config = self.require_password()
-        try:
-            return client.EgnyteOAuth(config).get_access_token()
-        except client.EgnyteException as e:
-            print(str(e))
-            sys.exit(2)
+        return client.EgnyteOAuth(config).get_access_token()
 
     def merge_config(self):
         """Merge loaded config with command line params"""
@@ -115,10 +119,14 @@ class Commands(object):
         self.merge_config()
         print(self.get_access_token())
 
+    def cmd_test(self):
+        api = client.EgnyteClient(self.config)
+        api.userinfo()
+        print("Connection successful")
 
 def main():
     parsed = parser.parse_args()
-    Commands(parsed).run()
+    sys.exit(Commands(parsed).run())
 
 if __name__ == '__main__':
     main()

@@ -1,8 +1,8 @@
 ## Command line
 
-python -m egnyte [-c config_file] config create
+python -m egnyte [-c config_file] config create -d DOMAIN -l LOGIN -p PASSWORD -k API_KEY [-t ACCESS_TOKEN]
 
-python -m egnyte [-c config_file] config update
+python -m egnyte [-c config_file] config update -d DOMAIN] [-l LOGIN] [-p PASSWORD] [-k API_KEY] [-t ACCESS_TOKEN]
 
 python -m egnyte [-c config_file] config token
 

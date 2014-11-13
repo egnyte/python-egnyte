@@ -1,6 +1,6 @@
 import unittest
 
-from egnyte import configuration
+from egnyte import configuration, client
 
 _config = configuration.load('test_config.json')
 
@@ -8,3 +8,6 @@ _config = configuration.load('test_config.json')
                      "No configuration for integration tests, check doc/TESTS.md")
 class TestCase(unittest.TestCase):
     config = _config
+
+    def setUp(self):
+        self.client = client.EgnyteClient(self.config)
