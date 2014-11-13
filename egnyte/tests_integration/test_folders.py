@@ -2,20 +2,20 @@ from egnyte import client, exc
 from config import TestCase
 
 
-class TestFolder(TestCase):
+class TestFolders(TestCase):
     def setUp(self):
-        super(TestFolder, self).setUp()
+        super(TestFolders, self).setUp()
         self.folderpath = r'/Shared/integration_test_python'
         self.destination = r'/Shared/integration_test_python2'
         self.filepath = self.folderpath + '/test.txt'
 
     def tearDown(self):
         try:
-            self.client.delete(self.folderpath)
+            self.client.delete_folder(self.folderpath)
         except exc.NotFound:
             pass
         try:
-            self.client.delete(self.destination)
+            self.client.delete_folder(self.destination)
         except exc.NotFound:
             pass
 
@@ -23,22 +23,22 @@ class TestFolder(TestCase):
         self.client.create_folder(self.folderpath)
         with self.assertRaises(exc.InsufficientPermissions):
             self.client.create_folder(self.folderpath)
-        self.client.delete(self.folderpath)
+        self.client.delete_folder(self.folderpath)
         with self.assertRaises(exc.NotFound):
-            self.client.delete(self.folderpath)
+            self.client.delete_folder(self.folderpath)
 
     def test_folder_move(self):
         self.client.create_folder(self.folderpath)
         self.client.move(self.folderpath, self.destination)
         with self.assertRaises(exc.NotFound):
-            self.client.delete(self.folderpath)
-        self.client.delete(self.destination)
+            self.client.delete_folder(self.folderpath)
+        self.client.delete_folder(self.destination)
 
     def test_folder_copy(self):
         self.client.create_folder(self.folderpath)
         self.client.copy(self.folderpath, self.destination)
-        self.client.delete(self.folderpath)
-        self.client.delete(self.destination)
+        self.client.delete_folder(self.folderpath)
+        self.client.delete_folder(self.destination)
 
     def test_folder_list(self):
         self.client.create_folder(self.folderpath)
@@ -46,7 +46,7 @@ class TestFolder(TestCase):
         self.assertEqual(data['is_folder'], True)
         self.assertEqual(data['name'], 'integration_test_python')
         self.assert_('folders' not in data)
-        self.client.delete(self.folderpath)
+        self.client.delete_folder(self.folderpath)
 
     def test_folder_create_link(self):
         self.client.create_folder(self.folderpath)

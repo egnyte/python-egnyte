@@ -6,15 +6,15 @@ except ImportError:
 from config import TestCase
 from egnyte import exc
 
-class TestFile(TestCase):
+class TestFiles(TestCase):
     def setUp(self):
-        super(TestFile, self).setUp()
+        super(TestFiles, self).setUp()
         self.folderpath = r'/Shared/integration_test_python'
         self.filepath = self.folderpath + '/test.txt'
 
     def tearDown(self):
         try:
-            self.client.delete(self.folderpath)
+            self.client.delete_folder(self.folderpath)
         except exc.NotFound:
             pass
 
@@ -23,10 +23,10 @@ class TestFile(TestCase):
         source.seek(0)
 
         self.client.create_folder(self.folderpath)
-        self.client.put_file(self.filepath, source)
+        self.client.put_file_contents(self.filepath, source)
 
         dest = StringIO()
-        self.client.get_file(self.filepath).write_to(dest)
+        self.client.get_file_contents(self.filepath).write_to(dest)
 
         dest.seek(0)
         source.seek(0)

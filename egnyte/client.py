@@ -1,13 +1,12 @@
 import datetime
 
-from egnyte.exc import default, created
-from egnyte.base import Session
-from egnyte.files import FileDownload
+from egnyte.exc import default, created, InvalidParameters
+from egnyte import base, files, users
 
 class Const:
     LINK_KIND_FILE = "file"
     LINK_KIND_FOLDER = "folder"
-    LINK_KIND_LIST = [LINK_KIND_FILE, LINK_KIND_FOLDER, ]
+    LINK_KIND_LIST = (LINK_KIND_FILE, LINK_KIND_FOLDER)
 
     LINK_ACCESSIBILITY_ANYONE = "anyone"  # accessible by anyone with link
     LINK_ACCESSIBILITY_PASSWORD = "password"  # accessible by anyone with link
@@ -17,15 +16,12 @@ class Const:
     LINK_ACCESSIBILITY_RECIPIENTS = "recipients"  # accessible by link recipients,
     # who must be domain users
     # (login required)
-    LINK_ACCESSIBILITY_LIST = [
+    LINK_ACCESSIBILITY_LIST = (
         LINK_ACCESSIBILITY_ANYONE,
         LINK_ACCESSIBILITY_PASSWORD,
         LINK_ACCESSIBILITY_DOMAIN,
         LINK_ACCESSIBILITY_RECIPIENTS,
-    ]
-
-
-class EgnyteClient(Session):
+    )
     USER_INFO_URI = r"pubapi/v1/userinfo"
     FOLDER_URI = r"pubapi/v1/fs%(folderpath)s"
     FILE_URI = r"pubapi/v1/fs-content/%(filepath)s"
@@ -36,55 +32,91 @@ class EgnyteClient(Session):
     ACTION_MOVE = 'move'
     ACTION_COPY = 'copy'
 
-    def userinfo(self):
-        return default.check_json_response(self.GET(self.get_url(self.USER_INFO_URI)))
+
+class EgnyteClient(base.Session):
+
+    # User API
+
+    def user_info(self):
+        return default.check_json_response(self.GET(self.get_url(Const.USER_INFO_URI)))
+
+    def users(self):
+        return users.Users(self)
+
+    def users_where(self, where):
+        return users.Users(self, where=where)
+
+    def users_search(self, search_string):
+        return users.Users(self, search_string=search_string)
+
+    def user_by_id(self, id):
+        return users.User(self, id=id)
+
+    def user_by_email(self, email):
+        return users.User(self, email=email)
+
+    def create_user(self, **kwargs):
+        return users.User(self, **kwargs)
+
+    def delete_user(self, id):
+        pass
+
+    # Folder and file operations
+
+    def folder(self, path = "/Shared"):
+        return files.Folder(self, path=path)
+
+    def file(self, path):
+        return files.File(self, path=path)
 
     def create_folder(self, folderpath):
-        url = self.get_url(self.FOLDER_URI, folderpath=folderpath)
-        r = self.POST(url, {'action': self.ACTION_ADD_FOLDER})
+        url = self.get_url(Const.FOLDER_URI, folderpath=folderpath)
+        r = self.POST(url, {'action': Const.ACTION_ADD_FOLDER})
         created.check_response(r)
 
-    def get_file(self, filepath):
-        url = self.get_url(self.FILE_URI, filepath=filepath)
-        r = self.GET(url, stream=True)
-        default.check_response(r)
-        return FileDownload(r)
-
-    def put_file(self, filepath, fptr):
-        url = self.get_url(self.FILE_URI, filepath=filepath)
-        r = self.POST(url, data=fptr, stream=True)
-        default.check_response(r)
-
-    def delete(self, folderpath):
-        url = self.get_url(self.FOLDER_URI, folderpath=folderpath)
+    def delete_folder(self, folderpath):
+        url = self.get_url(Const.FOLDER_URI, folderpath=folderpath)
         r = self.DELETE(url)
         default.check_response(r)
 
+    def get_file_contents(self, filepath):
+        url = self.get_url(Const.FILE_URI, filepath=filepath)
+        r = self.GET(url, stream=True)
+        default.check_response(r)
+        return files.FileDownload(r)
+
+    def put_file_contents(self, filepath, fptr):
+        url = self.get_url(Const.FILE_URI, filepath=filepath)
+        r = self.POST(url, data=fptr, stream=True)
+        default.check_response(r)
+
     def move(self, folderpath, destination):
-        url = self.get_url(self.FOLDER_URI, folderpath=folderpath)
-        r = self.POST(url, {'action': self.ACTION_MOVE, 'destination': destination})
+        url = self.get_url(Const.FOLDER_URI, folderpath=folderpath)
+        r = self.POST(url, {'action': Const.ACTION_MOVE, 'destination': destination})
         default.check_response(r)
 
     def copy(self, folderpath, destination):
-        url = self.get_url(self.FOLDER_URI, folderpath=folderpath)
-        r = self.POST(url, {'action': self.ACTION_COPY, 'destination': destination})
+        url = self.get_url(Const.FOLDER_URI, folderpath=folderpath)
+        r = self.POST(url, {'action': Const.ACTION_COPY, 'destination': destination})
         default.check_response(r)
 
     def list_content(self, folderpath):
-        url = self.get_url(self.FOLDER_URI, folderpath=folderpath)
+        url = self.get_url(Const.FOLDER_URI, folderpath=folderpath)
         r = self.GET(url)
         return default.check_json_response(r)
+
+    # Links API
 
     def create_link(self, path, kind, accessibility,
                     recipients=None, send_email=None, message=None,
                     copy_me=None, notify=None, link_to_current=None,
                     expiry=None, add_filename=None,
                     ):
-        assert kind in Const.LINK_KIND_LIST
-        assert accessibility in Const.LINK_ACCESSIBILITY_LIST
-        if recipients is None:
-            recipients = []
-        url = self.get_url(self.LINK_URI)
+        if kind not in Const.LINK_KIND_LIST:
+            raise InvalidParameters('kind', kind)
+        if accessibility not in Const.LINK_ACCESSIBILITY_LIST:
+            raise InvalidParameters('accessibility', accessibility)
+        url = self.get_url(Const.LINK_URI)
         data = {
             "path": path,
             "type": kind,
@@ -103,7 +135,7 @@ class EgnyteClient(Session):
         if recipients:
             data['recipients'] = recipients
         if expiry is not None:
-            if type(expiry) == int:
+            if isinstance(expiry, int):
                 data["expiryClicks"] = expiry
             elif type(expiry) == datetime.date:
                 data["expiryDate"] = expiry.strftime("%Y-%m-%d")
@@ -113,12 +145,12 @@ class EgnyteClient(Session):
         return default.check_json_response(r)
 
     def link_delete(self, id):
-        url = self.get_url(self.LINK_URI2, id=id)
+        url = self.get_url(Const.LINK_URI2, id=id)
         r = self.DELETE(url)
         default.check_response(r)
 
     def link_details(self, id):
-        url = self.get_url(self.LINK_URI2, id=id)
+        url = self.get_url(Const.LINK_URI2, id=id)
         r = self.GET(url)
         return default.check_json_response(r)
 
