@@ -8,7 +8,7 @@ For overview of the API, go to https://developers.egnyte.com
 # Getting an API key
 
 Register on https://developers.egnyte.com/member/register to get API key for your Egnyte account.
-This key is required to generate egnyte oAuth token.
+This key is required to generate Egnyte OAuth token.
 
 # Running tests
 
@@ -35,8 +35,8 @@ merge them.
 
 # Thread safety
 
-Each client object should be used from one thread at a time. This library does no locking of it it's own
-- it's responsibility of the caller to do so if necessart.
+Each client object should be used from one thread at a time. This library does no locking of
+it's own - it is responsibility of the caller to do so if necessary.
 
 # Dependencies
 
