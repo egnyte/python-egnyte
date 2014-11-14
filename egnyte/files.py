@@ -15,7 +15,7 @@ class Files(HasClient):
 
 class Folder(HasClient):
     def folder(self, path):
-        return Folder(self._client, self.path + '/' + path)
+        return Folder(self._client, path=self.path + '/' + path)
 
 
     def get_file(self, filename):

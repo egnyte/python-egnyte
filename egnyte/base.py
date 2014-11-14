@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import json
 import time
 
@@ -71,7 +69,6 @@ class Session(object):
             return self._url_prefix + path
 
     def close(self):
-        print("%r.close called" % self)
         if hasattr(self, '_session'):
             self._session.close()
             del self._session
