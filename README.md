@@ -1,69 +1,47 @@
 # Egnyte SDK
 
-# HOWTO
+This is the official Python client library for Egnyte.com Public APIs.
 
-## Install
+For overview of the API, go to https://developers.egnyte.com
 
-    $ easy_install egnyte-0.2-py2.7.egg
 
-## Get API key
+# Getting an API key
 
 Register on https://developers.egnyte.com/member/register to get API key for your Egnyte account.
 This key is required to generate egnyte oAuth token.
 
-## How to use it?
+# Running tests
 
-You need it first use `init` command to initialize egnyte sdk. Then verify that
-all config is correct using `show` command. Then you can share files using
-`share` command
+Check doc/TESTS.md
 
-    $ egnyte init vbapte egnyte <api-key>
-    Enter the password: <my egnyte account password>
-    $ egnyte show
-    $ egnyte share /path/to/file
+# Command line
 
-## How to get help?
+You can generate API access token easily using command line options.
+Check doc/COMMANDS.md for details.
 
-    $ egnyte -h
+# Examples
 
-    special commands
-    ================
-    .last_tb
+examples subdirectory contains example code that should give you good idea of how the client library can be used.
 
-    custom commands
-    ===============
-    get_access_token  help  init  share  show
+# Helping with development
 
-    $ egnyte init -h
-    usage: egnyte init [-h] [-token None] [-server egnyte.com] username domain api_key
+First, report any problems you find to https://developers.egnyte.com/forum/ or api-support@egnyte.com
 
-    positional arguments:
-      username            username
-      domain              domain
-      api_key             api_key
+If you'd like to fix something yourself, please fork this repository, commit the fixes and updates to tests,
+then set up a pull request with information what you're fixing.
 
-    optional arguments:
-      -h, --help          show this help message and exit
-      -token None         token
-      -server egnyte.com  server
+Please remember to assign copyright of your fixes to Egnyte or make them public domain so we can legally
+merge them.
 
-    $ egnyte share -h
-    usage: egnyte share [-h] [-folderpath None] filepath
+# Thread safety
 
-    positional arguments:
-      filepath          filepath
+Each client object should be used from one thread at a time. This library does no locking of it it's own
+- it's responsibility of the caller to do so if necessart.
 
-    optional arguments:
-      -h, --help        show this help message and exit
-      -folderpath None  filepath
+# Dependencies
 
-## Tests
+This library depends on:
 
-    $ fab test
-
-# TODO
-
-1. List Links api (last one): https://developers.egnyte.com/docs/Egnyte_Link_API_Documentation 
-2. User management api: https://developers.egnyte.com/docs/User_Management_API_Documentation
-3. Report management api: https://developers.egnyte.com/docs/Egnyte_Audit_Reporting_API_v1
+* requests 2.2.1 or later - for HTTPS calls
+* six 1.8.0 or later - for Python 2 and 3 compatibility using same source
 
