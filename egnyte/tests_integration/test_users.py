@@ -1,4 +1,4 @@
-from config import TestCase
+from egnyte.tests_integration.config import TestCase
 
 class TestUserInfo(TestCase):
     def test_userinfo(self):

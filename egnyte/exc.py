@@ -9,7 +9,7 @@ Left over from Ruby client:
 
 """
 
-import httplib
+from six.moves import http_client
 
 
 class EgnyteError(Exception):
@@ -100,14 +100,14 @@ def extract_errors(data):
 class ErrorMapping(dict):
     """Maps HTTP status to EgnyteError subclasses"""
 
-    def __init__(self, values=None, ok_statuses=(httplib.OK, )):
+    def __init__(self, values=None, ok_statuses=(http_client.OK, )):
         super(ErrorMapping, self).__init__({
-            httplib.BAD_REQUEST: RequestError,
-            httplib.UNAUTHORIZED: NotAuthorized,
-            httplib.FORBIDDEN: InsufficientPermissions,
-            httplib.NOT_FOUND: NotFound,
-            httplib.CONFLICT: DuplicateRecordExists,
-            httplib.REQUEST_ENTITY_TOO_LARGE: FileSizeExceedsLimit,
+            http_client.BAD_REQUEST: RequestError,
+            http_client.UNAUTHORIZED: NotAuthorized,
+            http_client.FORBIDDEN: InsufficientPermissions,
+            http_client.NOT_FOUND: NotFound,
+            http_client.CONFLICT: DuplicateRecordExists,
+            http_client.REQUEST_ENTITY_TOO_LARGE: FileSizeExceedsLimit,
         })
         if values:
             self.update(values)
@@ -151,4 +151,4 @@ class ErrorMapping(dict):
         return self.__class__(self)
 
 default = ErrorMapping()
-created = ErrorMapping(ok_statuses=(httplib.CREATED,))
+created = ErrorMapping(ok_statuses=(http_client.CREATED,))

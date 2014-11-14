@@ -3,6 +3,7 @@ import datetime
 from egnyte.exc import default, created, InvalidParameters
 from egnyte import base, files, users
 
+
 class Const:
     LINK_KIND_FILE = "file"
     LINK_KIND_FOLDER = "folder"
@@ -22,11 +23,11 @@ class Const:
         LINK_ACCESSIBILITY_DOMAIN,
         LINK_ACCESSIBILITY_RECIPIENTS,
     )
-    USER_INFO_URI = r"pubapi/v1/userinfo"
-    FOLDER_URI = r"pubapi/v1/fs%(folderpath)s"
-    FILE_URI = r"pubapi/v1/fs-content/%(filepath)s"
-    LINK_URI = r"pubapi/v1/links"
-    LINK_URI2 = r"pubapi/v1/links/%(id)s"
+    USER_INFO_URI = "pubapi/v1/userinfo"
+    FOLDER_URI = "pubapi/v1/fs%(folderpath)s"
+    FILE_URI = "pubapi/v1/fs-content/%(filepath)s"
+    LINK_URI = "pubapi/v1/links"
+    LINK_URI2 = "pubapi/v1/links/%(id)s"
 
     ACTION_ADD_FOLDER = 'add_folder'
     ACTION_MOVE = 'move'
@@ -63,7 +64,7 @@ class EgnyteClient(base.Session):
 
     # Folder and file operations
 
-    def folder(self, path = "/Shared"):
+    def folder(self, path="/Shared"):
         return files.Folder(self, path=path)
 
     def file(self, path):
@@ -87,7 +88,7 @@ class EgnyteClient(base.Session):
 
     def put_file_contents(self, filepath, fptr):
         url = self.get_url(Const.FILE_URI, filepath=filepath)
-        r = self.POST(url, data=fptr, stream=True)
+        r = self.POST(url, data=fptr)
         default.check_response(r)
 
     def move(self, folderpath, destination):

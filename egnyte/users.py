@@ -1,4 +1,4 @@
-from base import HasClient
+from egnyte.base import HasClient
 
 class User(HasClient):
     def save(self):

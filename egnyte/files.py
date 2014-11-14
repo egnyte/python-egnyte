@@ -1,5 +1,6 @@
 from contextlib import closing
-from base import HasClient
+
+from egnyte.base import HasClient
 
 class File(HasClient):
 

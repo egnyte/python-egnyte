@@ -11,3 +11,8 @@ class TestCase(unittest.TestCase):
 
     def setUp(self):
         self.client = client.EgnyteClient(self.config)
+        self.root_folder = self.client.Folder('/Shared/integration_test_python')
+
+    def tearDown(self):
+        self.client.close()
+        del self.client

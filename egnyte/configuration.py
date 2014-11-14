@@ -18,7 +18,7 @@ def load(filename=None):
     """
     filename = add_directory(filename or 'config.json')
     try:
-        with file(filename, "rb") as f:
+        with open(filename, "r") as f:
             return json.load(f)
     except IOError:
         pass

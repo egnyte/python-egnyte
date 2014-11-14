@@ -1,7 +1,12 @@
+from __future__ import print_function
+
 import json
-import requests
-import urllib
 import time
+
+from six import string_types
+from six.moves.urllib.parse import quote
+
+import requests
 
 from egnyte.configuration import load
 from egnyte.exc import default
@@ -30,7 +35,7 @@ class Session(object):
             self.time_between_requests = 1.0 / float(self.config['requests_per_second'])
 
     def _encode_path(self, path):
-        return str(urllib.quote(path.encode('utf-8'), '/'))
+        return quote(path, '/')
 
     def _respect_limits(self):
         if self.time_between_requests:
@@ -60,10 +65,17 @@ class Session(object):
 
     def get_url(self, path, **kw):
         if kw:
-            kw = {k:self._encode_path(v) if isinstance(v, basestring) else str(v) for k, v in kw.items()}
+            kw = {k:self._encode_path(v) if isinstance(v, string_types) else str(v) for k, v in kw.items()}
             return self._url_prefix + path % kw
         else:
             return self._url_prefix + path
+
+    def close(self):
+        print("%r.close called" % self)
+        if hasattr(self, '_session'):
+            self._session.close()
+            del self._session
+
 
 def get_access_token(config):
     session = Session(config)

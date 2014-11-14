@@ -1,5 +1,5 @@
 from egnyte import client, exc
-from config import TestCase
+from egnyte.tests_integration.config import TestCase
 
 
 class TestFolders(TestCase):
@@ -18,6 +18,7 @@ class TestFolders(TestCase):
             self.client.delete_folder(self.destination)
         except exc.NotFound:
             pass
+        super(TestFolders, self).tearDown()
 
     def test_folder(self):
         self.client.create_folder(self.folderpath)
@@ -45,7 +46,7 @@ class TestFolders(TestCase):
         data = self.client.list_content(self.folderpath)
         self.assertEqual(data['is_folder'], True)
         self.assertEqual(data['name'], 'integration_test_python')
-        self.assert_('folders' not in data)
+        self.assertTrue('folders' not in data)
         self.client.delete_folder(self.folderpath)
 
     def test_folder_create_link(self):
