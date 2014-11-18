@@ -91,5 +91,3 @@ class HasClient(object):
     def __init__(self, _client, **kwargs):
         self._client = _client
         self.__dict__.update(kwargs)
-
-

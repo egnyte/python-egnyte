@@ -6,7 +6,7 @@ import argparse
 import json
 import sys
 
-from egnyte import client, configuration
+from egnyte import client, configuration, exc, base
 
 parser = argparse.ArgumentParser(prog="python -m egnyte")
 parser.add_argument("-c", "--config-path", help="Path to config file")
@@ -42,8 +42,8 @@ for p, required in [
         (parser_token, False),
     ]:
     p.add_argument('-d', '--domain', required=required, help='domain name')
-    p.add_argument('-l', '--login', required=required, help='login')
-    p.add_argument('-p', '--password', required=required, help='password')
+    p.add_argument('-l', '--login', required=False, help='login')
+    p.add_argument('-p', '--password', required=False, help='password')
     p.add_argument('-k', '--key', dest='api_key', required=required, help='API key')
 
 for p in (parser_config_create, parser_config_update):
@@ -63,26 +63,29 @@ class Commands(object):
 
     def save_config(self):
         return configuration.save(self.config, self.args.config_path)
-    
+
     config = property(load_config)
 
     def __init__(self, args):
         self.args = args
 
     def run(self):
+        if not hasattr(self.args, 'command'):
+            print("Use -h or --help for help")
+            return
         method = getattr(self, "cmd_%s" % self.args.command, None)
         if method is None:
             print("Command '%s' not implemented yet" % self.args.command.replace('_', ' '))
             return self.STATUS_CMD_NOT_FOUND
         try:
             return method()
-        except client.EgnyteException as e:
+        except exc.EgnyteError as e:
             print(repr(e))
             return self.STATUS_API_ERROR
 
     def get_access_token(self):
         config = self.require_password()
-        return client.EgnyteOAuth(config).get_access_token()
+        return base.get_access_token(config).get_access_token()
 
     def merge_config(self):
         """Merge loaded config with command line params"""
@@ -103,7 +106,7 @@ class Commands(object):
         print(json.dumps(self.config, indent=2, sort_keys=True))
 
     def cmd_config_create(self):
-        self.config.clear()
+        self._config = {}
         self.merge_config()
         self.save_config()
 
@@ -114,15 +117,15 @@ class Commands(object):
     def cmd_config_token(self):
         self.config['access_token'] = self.get_access_token()
         self.save_config()
-        
+
     def cmd_token(self):
         self.merge_config()
         print(self.get_access_token())
 
     def cmd_test(self):
         api = client.EgnyteClient(self.config)
-        api.userinfo()
-        print("Connection successful")
+        info = api.user_info()
+        print("Connection successful for user %s" % (info['username'],))
 
 def main():
     parsed = parser.parse_args()

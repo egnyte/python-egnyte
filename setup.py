@@ -1,13 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+
 try:
     from setuptools import setup
 except ImportError:
     from distutils.core import setup
 
-with open("README.rst", "rt") as f:
-    long_description = f.read()
+try:
+    with open("README.rst", "rt") as f:
+        long_description = f.read()
+except IOError: # use update-readme
+    long_description = ""
 
 setup(
     name='egnyte',

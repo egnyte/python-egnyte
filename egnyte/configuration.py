@@ -30,5 +30,8 @@ def save(config, filename=None):
     If filename is not an absolute path, it will be prefixed with ~/.egnyte/
     """
     filename = add_directory(filename or 'config.json')
-    with file(filename, "wb") as f:
+    directory = os.path.dirname(filename)
+    if not os.path.exists(directory):
+        os.makedirs(directory, 0o700)
+    with open(filename, "w") as f:
         json.dump(config, f, indent=2, sort_keys=True)
