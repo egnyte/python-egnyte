@@ -2,33 +2,59 @@ from contextlib import closing
 
 from egnyte.base import HasClient
 
-class File(HasClient):
+class Item(HasClient):
+    """
+    File or folder.
+    """
+
+class File(Item):
+    """
+    Wrapper for a file in the cloud.
+    Does not have to exist - can represent a new file to be uploaded.
+    path - file path
+    """
 
     def upload(self, fp):
+        """
+        Upload file contents.
+        fp should be a file-like object
+        """
         return self._client.put_file_contents(self.path)
 
     def download(self):
+        """
+        Download file contents.
+        Returns a FileDownload.
+        """
         return self._client.get_file_contents(self.path)
 
 class Files(HasClient):
-    pass
+    """
+    Collection of files.
+    """
 
-class Folder(HasClient):
+class Folder(Item):
+    """
+    Wrapper for a folder the cloud.
+    Does not have to exist - can represent a new folder yet to be created.
+    """
     def folder(self, path):
+        """Return a subfolder of this folder."""
         return Folder(self._client, path=self.path + '/' + path)
 
-
     def get_file(self, filename):
+        """Return a file in this folder."""
         return File(self._client, folder=self, filename=filename, path=self.path + '/' + filename)
 
     def save(self):
-        pass
+        """Save changed properties of an existing folder."""
 
     def create(self):
-        pass
+        """Create a new folder in the Egnyte cloud"""
+        return self._client.create_folder(self.path)
 
 class Folders(HasClient):
-    pass
+    """Collection of folders"""
 
 class FileDownload(object):
     """
