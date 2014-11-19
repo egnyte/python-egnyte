@@ -1,60 +1,63 @@
-from egnyte import client, exc
+from egnyte import exc
+from egnyte.base import Const
+
 from egnyte.tests_integration.config import TestCase
 
 
 class TestFolders(TestCase):
     def setUp(self):
         super(TestFolders, self).setUp()
-        self.folderpath = r'/Shared/integration_test_python'
-        self.destination = r'/Shared/integration_test_python2'
-        self.filepath = self.folderpath + '/test.txt'
+        self.folder = self.root_folder.folder('1')
+        self.dest = self.root_folder.folder('2')
+        self.file = self.folder.file('test.txt')
 
     def tearDown(self):
         try:
-            self.client.delete_folder(self.folderpath)
+            self.folder.delete()
         except exc.NotFound:
             pass
         try:
-            self.client.delete_folder(self.destination)
+            self.dest.delete()
         except exc.NotFound:
             pass
         super(TestFolders, self).tearDown()
 
     def test_folder(self):
-        self.client.create_folder(self.folderpath)
+        self.folder.create()
         with self.assertRaises(exc.InsufficientPermissions):
-            self.client.create_folder(self.folderpath)
-        self.client.delete_folder(self.folderpath)
+            self.folder.create(False)
+        self.folder.delete()
         with self.assertRaises(exc.NotFound):
-            self.client.delete_folder(self.folderpath)
+            self.folder.delete()
 
     def test_folder_move(self):
-        self.client.create_folder(self.folderpath)
-        self.client.move(self.folderpath, self.destination)
+        self.folder.create()
+        moved = self.folder.move(self.dest.path)
+        self.assertEqual(moved.path, self.dest.path, "Moved folder path should be identical")
         with self.assertRaises(exc.NotFound):
-            self.client.delete_folder(self.folderpath)
-        self.client.delete_folder(self.destination)
+            self.folder.delete()
+        self.dest.delete()
 
     def test_folder_copy(self):
-        self.client.create_folder(self.folderpath)
-        self.client.copy(self.folderpath, self.destination)
-        self.client.delete_folder(self.folderpath)
-        self.client.delete_folder(self.destination)
+        self.folder.create()
+        copied = self.folder.copy(self.dest.path)
+        self.assertEqual(copied.path, self.dest.path, "Copied folder path should be identical")
+        self.folder.delete()
+        self.dest.delete()
 
     def test_folder_list(self):
-        self.client.create_folder(self.folderpath)
-        data = self.client.list_content(self.folderpath)
+        self.client.create_folder(self.folder.path)
+        data = self.client.list_content(self.folder.path)
         self.assertEqual(data['is_folder'], True)
-        self.assertEqual(data['name'], 'integration_test_python')
         self.assertTrue('folders' not in data)
-        self.client.delete_folder(self.folderpath)
+        self.client.delete_folder(self.folder.path)
 
-    def test_folder_create_link(self):
-        self.client.create_folder(self.folderpath)
-        data = self.client.create_link(
-            self.folderpath,
-            client.Const.LINK_KIND_FOLDER,
-            client.Const.LINK_ACCESSIBILITY_ANYONE,
+    def test_folder_link_create(self):
+        self.client.create_folder(self.folder.path)
+        data = self.client.link_create(
+            self.folder.path,
+            Const.LINK_KIND_FOLDER,
+            Const.LINK_ACCESSIBILITY_ANYONE,
         )
         url = data['links'][0]['url']
         link = self.client.link_details(data['links'][0]['id'])

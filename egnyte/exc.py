@@ -72,6 +72,9 @@ class DuplicateRecordExists(EgnyteError):
 class FileSizeExceedsLimit(EgnyteError):
     """File is too large for this operation."""
 
+class ChecksumError(EgnyteError):
+    """Checksum of the uploaded file is different than checksum calculated locally - file was corrupted during transfer."""
+
 
 def extract_errors(data):
     """
@@ -96,11 +99,20 @@ def extract_errors(data):
     else:
         yield data
 
+def recursive_tuple(data):
+    """Convert nested lists/dicts into tuples for structural comparing"""
+    if isinstance(data, (list, tuple)):
+        return tuple(sorted(recursive_tuple(x) for x in data))
+    elif isinstance(data, dict):
+        return tuple(sorted((recursive_tuple(x), recursive_tuple(y)) for (x, y) in data.items()))
+    return data
+
 
 class ErrorMapping(dict):
     """Maps HTTP status to EgnyteError subclasses"""
+    ignored_errors = ()
 
-    def __init__(self, values=None, ok_statuses=(http_client.OK, )):
+    def __init__(self, values=None, ok_statuses=(http_client.OK, ), ignored_errors=None):
         super(ErrorMapping, self).__init__({
             http_client.BAD_REQUEST: RequestError,
             http_client.UNAUTHORIZED: NotAuthorized,
@@ -111,6 +123,8 @@ class ErrorMapping(dict):
         })
         if values:
             self.update(values)
+        if ignored_errors:
+            self.ignored_errors = recursive_tuple(ignored_errors)
         self.ok_statuses = ok_statuses
 
     def map_error(self, response):
@@ -133,8 +147,15 @@ class ErrorMapping(dict):
             except Exception:
                 errors.append({"http response": response.text})
             errors.append({"http status": response.status_code})
-            raise error_type(*errors)
+            if not self.ignore_error(errors):
+                raise error_type(*errors)
         return response
+
+    def ignore_error(self, errors):
+        errors = recursive_tuple(errors)
+        if errors and self.ignored_errors:
+            result = any( (errors == ignored) for ignored in self.ignored_errors)
+            return result
 
     def check_json_response(self, response, *ok_statuses):
         """
@@ -152,3 +173,7 @@ class ErrorMapping(dict):
 
 default = ErrorMapping()
 created = ErrorMapping(ok_statuses=(http_client.CREATED,))
+created_ignore_existing = ErrorMapping(ok_statuses=(http_client.CREATED,), ignored_errors = [
+    (u'Folder already exists at this location', {'http status': 403})
+])
+

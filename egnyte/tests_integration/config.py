@@ -1,18 +1,26 @@
-import unittest
+def createTestCase(config_file):
+    import unittest
+    import hashlib
+    from egnyte import configuration, client
 
-from egnyte import configuration, client
+    config = configuration.load(config_file)
+    root_folder_name = '/Shared/integration_test_python/%s' % hashlib.sha256(config.get('access_token', '')).hexdigest()
 
-_config = configuration.load('test_config.json')
+    class TestCase(unittest.TestCase):
+        def setUp(self):
+            self.client = client.EgnyteClient(self.config)
+            self.root_folder = self.client.folder(self.root_folder_name)
 
-@unittest.skipUnless(_config.get('access_token') and _config.get('domain'),
-                     "No configuration for integration tests, check doc/TESTS.md")
-class TestCase(unittest.TestCase):
-    config = _config
+        def tearDown(self):
+            self.client.close()
+            del self.client
 
-    def setUp(self):
-        self.client = client.EgnyteClient(self.config)
-        self.root_folder = self.client.folder('/Shared/integration_test_python')
+    TestCase.config = config
+    TestCase.root_folder_name = root_folder_name
 
-    def tearDown(self):
-        self.client.close()
-        del self.client
+    return unittest.skipUnless(config.get('access_token') and config.get('domain'),
+            "No configuration for integration tests (%s), check doc/TESTS.md" % config_file)(TestCase)
+
+
+TestCase = createTestCase('test_config.json') # default test configuration
+

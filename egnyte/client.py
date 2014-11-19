@@ -1,45 +1,21 @@
+from __future__ import print_function
+
 import datetime
 
-from egnyte.exc import default, created, InvalidParameters
-from egnyte import base, files, users
+import six
 
-
-class Const:
-    LINK_KIND_FILE = "file"
-    LINK_KIND_FOLDER = "folder"
-    LINK_KIND_LIST = (LINK_KIND_FILE, LINK_KIND_FOLDER)
-
-    LINK_ACCESSIBILITY_ANYONE = "anyone"  # accessible by anyone with link
-    LINK_ACCESSIBILITY_PASSWORD = "password"  # accessible by anyone with link
-    # who knows password
-    LINK_ACCESSIBILITY_DOMAIN = "domain"  # accessible by any domain user
-    # (login required)
-    LINK_ACCESSIBILITY_RECIPIENTS = "recipients"  # accessible by link recipients,
-    # who must be domain users
-    # (login required)
-    LINK_ACCESSIBILITY_LIST = (
-        LINK_ACCESSIBILITY_ANYONE,
-        LINK_ACCESSIBILITY_PASSWORD,
-        LINK_ACCESSIBILITY_DOMAIN,
-        LINK_ACCESSIBILITY_RECIPIENTS,
-    )
-    USER_INFO_URI = "pubapi/v1/userinfo"
-    FOLDER_URI = "pubapi/v1/fs%(folderpath)s"
-    FILE_URI = "pubapi/v1/fs-content/%(filepath)s"
-    LINK_URI = "pubapi/v1/links"
-    LINK_URI2 = "pubapi/v1/links/%(id)s"
-
-    ACTION_ADD_FOLDER = 'add_folder'
-    ACTION_MOVE = 'move'
-    ACTION_COPY = 'copy'
+from egnyte.exc import default, created, created_ignore_existing, InvalidParameters, ChecksumError
+from egnyte import base, files, users, links
 
 
 class EgnyteClient(base.Session):
+    upload_chunk_size = 10 * (1024 * 1024) # 10 MB
+    upload_chunk_retries = 3
 
     # User API
 
     def user_info(self):
-        return default.check_json_response(self.GET(self.get_url(Const.USER_INFO_URI)))
+        return default.check_json_response(self.GET(self.get_url(base.Const.USER_INFO_URI)))
 
     def users(self):
         return users.Users(self)
@@ -70,54 +46,96 @@ class EgnyteClient(base.Session):
     def file(self, path):
         return files.File(self, path=path)
 
-    def create_folder(self, folderpath):
-        url = self.get_url(Const.FOLDER_URI, folderpath=folderpath)
-        r = self.POST(url, {'action': Const.ACTION_ADD_FOLDER})
-        created.check_response(r)
+    def create_folder(self, folderpath, ignore_if_exists=True):
+        url = self.get_url(base.Const.FOLDER_URI, folderpath=folderpath)
+        r = self.POST(url, {'action': base.Const.ACTION_ADD_FOLDER})
+        (created_ignore_existing if ignore_if_exists else created).check_response(r)
 
     def delete_folder(self, folderpath):
-        url = self.get_url(Const.FOLDER_URI, folderpath=folderpath)
+        url = self.get_url(base.Const.FOLDER_URI, folderpath=folderpath)
         r = self.DELETE(url)
         default.check_response(r)
 
     def get_file_contents(self, filepath):
-        url = self.get_url(Const.FILE_URI, filepath=filepath)
+        url = self.get_url(base.Const.FILE_URI, filepath=filepath)
         r = self.GET(url, stream=True)
         default.check_response(r)
         return files.FileDownload(r)
 
-    def put_file_contents(self, filepath, fptr):
-        url = self.get_url(Const.FILE_URI, filepath=filepath)
-        r = self.POST(url, data=fptr)
-        default.check_response(r)
+    def put_file_contents(self, filepath, fp, size=None):
+        """
+        Upload a file to cloud.
+        fp can be bytes or any file-like object, but if you don't specify it's size in
+        advance it must support tell and seek methods.
+        """
+        url = self.get_url(base.Const.FILE_URI, filepath=filepath)
+        if isinstance(fp, six.binary_type):
+            fp = six.BytesIO(fp)
+        if size is None:
+            size = base.get_file_size(fp)
+        if size < self.upload_chunk_size:
+            # simple, one request upload
+            chunk = base._FileChunk(fp, 0, size)
+            r = self.POST(url, data=chunk, headers={'Content-length': size})
+            default.check_response(r)
+            server_sha = r.headers['X-Sha512-Checksum']
+            our_sha = chunk.sha.hexdigest()
+            if server_sha != our_sha:
+                raise ChecksumError("Failed to upload file", {})
+        else: # chunked upload
+            return self._chunked_upload(filepath, fp, size)
+
+    def _chunked_upload(self, filepath, fp, size):
+        url = self.get_url(base.Const.FILE_URI_CHUNKED, filepath=filepath)
+        chunks = list(base.split_file_into_chunks(fp, size, self.upload_chunk_size)) # need count of chunks
+        chunk_count = len(chunks)
+        headers = {}
+        for chunk_number, chunk in enumerate(chunks, 1):  # count from 1 not 0
+            headers['x-egnyte-chunk-num'] = "%d" % chunk_number
+            headers['content-length'] = chunk.size
+            if chunk_number == chunk_count: # last chunk
+                headers['x-egnyte-last-chunk'] = "true"
+            retries = max(self.upload_chunk_retries, 1)
+            while retries > 0:
+                r = self.POST(url, data=chunk, headers=headers)
+                server_sha = r.headers['x-egnyte-chunk-sha512-checksum']
+                our_sha = chunk.sha.hexdigest()
+                if server_sha == our_sha:
+                    break
+                retries -= 1
+            if retries == 0:
+                raise ChecksumError("Failed to upload file chunk", {"chunk_number": chunk_number, "start_position": chunk.position})
+            default.check_response(r)
+            if chunk_number == 1:
+                headers['x-egnyte-upload-id'] = r.headers['x-egnyte-upload-id']
 
     def move(self, folderpath, destination):
-        url = self.get_url(Const.FOLDER_URI, folderpath=folderpath)
-        r = self.POST(url, {'action': Const.ACTION_MOVE, 'destination': destination})
+        url = self.get_url(base.Const.FOLDER_URI, folderpath=folderpath)
+        r = self.POST(url, {'action': base.Const.ACTION_MOVE, 'destination': destination})
         default.check_response(r)
 
     def copy(self, folderpath, destination):
-        url = self.get_url(Const.FOLDER_URI, folderpath=folderpath)
-        r = self.POST(url, {'action': Const.ACTION_COPY, 'destination': destination})
+        url = self.get_url(base.Const.FOLDER_URI, folderpath=folderpath)
+        r = self.POST(url, {'action': base.Const.ACTION_COPY, 'destination': destination})
         default.check_response(r)
 
     def list_content(self, folderpath):
-        url = self.get_url(Const.FOLDER_URI, folderpath=folderpath)
+        url = self.get_url(base.Const.FOLDER_URI, folderpath=folderpath)
         r = self.GET(url)
         return default.check_json_response(r)
 
     # Links API
 
-    def create_link(self, path, kind, accessibility,
+    def link_create(self, path, kind, accessibility,
                     recipients=None, send_email=None, message=None,
                     copy_me=None, notify=None, link_to_current=None,
                     expiry=None, add_filename=None,
                     ):
-        if kind not in Const.LINK_KIND_LIST:
+        if kind not in base.Const.LINK_KIND_LIST:
             raise InvalidParameters('kind', kind)
-        if accessibility not in Const.LINK_ACCESSIBILITY_LIST:
+        if accessibility not in base.Const.LINK_ACCESSIBILITY_LIST:
             raise InvalidParameters('accessibility', accessibility)
-        url = self.get_url(Const.LINK_URI)
+        url = self.get_url(base.Const.LINK_URI)
         data = {
             "path": path,
             "type": kind,
@@ -131,7 +149,7 @@ class EgnyteClient(base.Session):
             data['notify'] = notify
         if add_filename is not None:
             data['addFilename'] = add_filename
-        if kind == Const.LINK_KIND_FILE and link_to_current is not None:
+        if kind == base.Const.LINK_KIND_FILE and link_to_current is not None:
             data["linkToCurrent"] = link_to_current
         if recipients:
             data['recipients'] = recipients
@@ -146,15 +164,16 @@ class EgnyteClient(base.Session):
         return default.check_json_response(r)
 
     def link_delete(self, id):
-        url = self.get_url(Const.LINK_URI2, id=id)
+        url = self.get_url(base.Const.LINK_URI2, id=id)
         r = self.DELETE(url)
         default.check_response(r)
 
     def link_details(self, id):
-        url = self.get_url(Const.LINK_URI2, id=id)
+        url = self.get_url(base.Const.LINK_URI2, id=id)
         r = self.GET(url)
         return default.check_json_response(r)
 
     def links(self):
         # TODO
         pass
+
