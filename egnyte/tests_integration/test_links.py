@@ -4,12 +4,8 @@ from egnyte.tests_integration.config import TestCase
 
 
 class TestLinks(TestCase):
-    def setUp(self):
-        super(TestLinks, self).setUp()
-        self.folder = self.root_folder.folder('links_1')
-
     def test_folder_link_duplicates(self):
-        folder = self.client.folder(self.folder.path).create()
+        folder = self.root_folder.folder("link_duplicates").create()
         links = folder.link(const.LINK_ACCESSIBILITY_ANYONE, recipients=['test1@example.com', 'test2@example.com'],
                             send_email=False)
         link_one = links[0]

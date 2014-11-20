@@ -1,5 +1,4 @@
-from contextlib import closing
-
+import collections
 import datetime
 
 import six
@@ -44,8 +43,8 @@ class File(FileOrFolder):
     _link_kind = const.LINK_KIND_FILE
     _lazy_attributes = {'num_versions', 'name', 'checksum', 'last_modified', 'entry_id',
                         'uploaded_by', 'size', 'is_folder'}
-    _url_content_template = "pubapi/v1/fs-content%(path)s"
-    _url_content_chunked_template = "pubapi/v1/fs-content-chunked%(filepath)s"
+    _url_template_content = "pubapi/v1/fs-content%(path)s"
+    _url_template_content_chunked = "pubapi/v1/fs-content-chunked%(filepath)s"
 
     def upload(self, fp, size=None):
         """
@@ -59,7 +58,7 @@ class File(FileOrFolder):
             size = base.get_file_size(fp)
         if size < self._upload_chunk_size:
             # simple, one request upload
-            url = self._client.get_url(self._url_content_template, path=self.path)
+            url = self._client.get_url(self._url_template_content, path=self.path)
             chunk = base._FileChunk(fp, 0, size)
             r = self._client.POST(url, data=chunk, headers={'Content-length': size})
             exc.default.check_response(r)
@@ -77,7 +76,7 @@ class File(FileOrFolder):
         Optional range is 2 integer sequence (start offset, end offset) used to download
         only part of the file.
         """
-        url = self._client.get_url(self._url_content_template, path=self.path)
+        url = self._client.get_url(self._url_template_content, path=self.path)
         if download_range is None:
             r = exc.default.check_response(self._client.GET(url, stream=True))
         else:
@@ -85,10 +84,10 @@ class File(FileOrFolder):
                 raise exc.InvalidParameters('Download range needs to be None or a 2 element integer sequence')
             r = exc.partial.check_response(self._client.GET(url, stream=True,
                                                             headers={'Range': 'bytes=%d-%d' % download_range}))
-        return FileDownload(r)
+        return base.FileDownload(r)
 
     def _chunked_upload(self, fp, size):
-        url = self._client.get_url(self._url_content_chunked_template, path=self.path)
+        url = self._client.get_url(self._url_template_content_chunked, path=self.path)
         chunks = list(base.split_file_into_chunks(fp, size, self._upload_chunk_size))  # need count of chunks
         chunk_count = len(chunks)
         headers = {}
@@ -122,6 +121,8 @@ class Folder(FileOrFolder):
     Does not have to exist - can represent a new folder yet to be created.
     """
     _url_template = "pubapi/v1/fs%(path)s"
+    _url_template_permissions = "pubapi/v1/perms/folder/%(path)s"
+    _url_template_effective_permissions = "pubabi/v1/perms/user/%(username)s"
     _lazy_attributes = {'name', 'folder_id', 'is_folder'}
     _link_kind = const.LINK_KIND_FOLDER
 
@@ -163,48 +164,28 @@ class Folder(FileOrFolder):
         files = (File(self._client, **file_data) for file_data in json.get('files', ()))
         return {'folders': folders, 'files': files}
 
-
-class FileDownload(object):
-    """
-    Provides file length and other metadata.
-    Delegates reads to underlying requests response.
-    """
-
-    def __init__(self, response):
-        self.response = response
-
-    def __len__(self):
-        return int(self.response.headers['content-length'])
-
-    def write_to(self, fp):
-        """Copy data to a file, then close the source."""
-        with closing(self):
-            for chunk in self.iter_content():
-                fp.write(chunk)
-
-    def close(self):
-        self.response.close()
-
-    def closed(self):
-        return self.response.closed()
-
-    def read(self, amt=None, decode_content=True):
+    def get_permissions(self, users=None, groups=None):
         """
-        Wrap urllib3 response.
-        amt - How much of the content to read. If specified, caching is skipped because it doesn't make sense to cache partial content as the full response.
-        decode_content - If True, will attempt to decode the body based on the 'content-encoding' header.
+        Get Permission values for this folder.
         """
-        return self.response.raw.read(amt, decode_content)
+        query_params = {}
+        if users is not None:
+            query_params[u'users'] = '|'.join(six.text_type(x) for x in users)
+        if groups is not None:
+            query_params[u'groups'] = '|'.join(six.text_type(x) for x in users)
+        url = self._client.get_url(self._url_template_permissions, path=self.path)
+        r = exc.default.check_json_response(self._client.GET(url, params=query_params))
+        return Permissions(r)
+        
+    def get_effective_permissions(self, username):
+        url = self._client.get_url(self._url_template_effective_permissions, username=username)
+        print url
+        r = exc.default.check_json_response(self._client.GET(url, params=dict(folder=self.path)))
+        return r
 
-    def __iter__(self, **kwargs):
-        """
-        Iterate resposne body line by line.
-        You can speficify alternate delimiter with delimiter parameter.
-        """
-        return self.response.iter_lines(**kwargs)
 
-    def iter_content(self, chunk_size=16 * 1024):
-        return self.response.iter_content(chunk_size)
+
+
 
 
 class Link(base.Resource):
@@ -218,6 +199,8 @@ class Link(base.Resource):
 
 
 class User(base.Resource):
+    _url_template_effective_permissions = "pubabi/v1/perms/user/%(username)s"
+
     def apply_changes(self):
         pass
 
@@ -226,6 +209,12 @@ class User(base.Resource):
 
     def delete(self):
         pass
+
+    def get_effective_permissions(self, path):
+        url = self._client.get_url(self._url_template_effective_permissions, username=self.username)
+        r = exc.default.check_json_response(self._client.GET(url, params=dict(folder=path)))
+        return r
+
 
 
 class Files(base.HasClient):
@@ -273,7 +262,7 @@ class Links(base.HasClient):
             if isinstance(expiry, int):
                 data["expiryClicks"] = expiry
             elif type(expiry) == datetime.date:
-                data["expiryDate"] = expiry.strftime("%Y-%m-%d")
+                data["expiryDate"] = base.date_format(expiry)
         if message is not None:
             data['message'] = message
         response = exc.default.check_json_response(self._client.POST(url, data))
@@ -306,3 +295,24 @@ class Users(base.HasClient):
 
     # def create_user(self, **kwargs):
     #    return .User(self, **kwargs)
+
+class Permissions(object):
+    """Wrapper for a permission set"""
+    def __init__(self, json):
+        self._users = json.get('users', ())
+        self._groups = json.get('groups', ())
+        self._unpack()
+
+    def _unpack(self):
+        self.user_to_permission = {}
+        self.group_to_permission = {}
+        self.permission_to_owner = collections.defaultdict(lambda: dict(users=set(), groups=set()))
+        for d in self._users:
+            self.user_to_permission[d['subject']] = d['permission']
+            self.permission_to_owner[d['permission']]['users'].add(d['subject'])
+        for d in self._groups:
+            self.group_to_permission[d['subject']] = d['permission']
+            self.permission_to_owner[d['permission']]['groups'].add(d['subject'])
+
+    
+
