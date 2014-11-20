@@ -7,41 +7,9 @@ from six.moves.urllib.parse import quote
 
 import requests
 
-from egnyte.configuration import load
-from egnyte.exc import default
+from egnyte import exc, configuration
 
 JSON_HEADERS = {'content-type': 'application/json'}
-
-class Const:
-    LINK_KIND_FILE = "file"
-    LINK_KIND_FOLDER = "folder"
-    LINK_KIND_LIST = (LINK_KIND_FILE, LINK_KIND_FOLDER)
-
-    LINK_ACCESSIBILITY_ANYONE = "anyone"  # accessible by anyone with link
-    LINK_ACCESSIBILITY_PASSWORD = "password"  # accessible by anyone with link
-    # who knows password
-    LINK_ACCESSIBILITY_DOMAIN = "domain"  # accessible by any domain user
-    # (login required)
-    LINK_ACCESSIBILITY_RECIPIENTS = "recipients"  # accessible by link recipients,
-    # who must be domain users
-    # (login required)
-    LINK_ACCESSIBILITY_LIST = (
-        LINK_ACCESSIBILITY_ANYONE,
-        LINK_ACCESSIBILITY_PASSWORD,
-        LINK_ACCESSIBILITY_DOMAIN,
-        LINK_ACCESSIBILITY_RECIPIENTS,
-    )
-    USER_INFO_URI = "pubapi/v1/userinfo"
-    FOLDER_URI = "pubapi/v1/fs%(folderpath)s"
-    FILE_URI = "pubapi/v1/fs-content%(filepath)s"
-    FILE_URI_CHUNKED = "pubapi/v1/fs-content-chunked%(filepath)s"
-    LINK_URI = "pubapi/v1/links"
-    LINK_URI2 = "pubapi/v1/links/%(id)s"
-
-    ACTION_ADD_FOLDER = 'add_folder'
-    ACTION_MOVE = 'move'
-    ACTION_COPY = 'copy'
-
 
 class Session(object):
     """
@@ -51,7 +19,7 @@ class Session(object):
     last_request_time = None
 
     def __init__(self, config=None):
-        self.config = config if isinstance(config, dict) else load(config)
+        self.config = config if isinstance(config, dict) else configuration.load(config)
         domain = self.config['domain']
         if '.' not in domain:
             domain = domain + ".egnyte.com"
@@ -95,12 +63,12 @@ class Session(object):
         self._respect_limits()
         return self._session.delete(url, **kwargs)
 
-    def get_url(self, path, **kw):
-        if kw:
-            kw = {k:self._encode_path(v) if isinstance(v, string_types) else str(v) for k, v in kw.items()}
-            return self._url_prefix + path % kw
+    def get_url(self, _path, **kwargs):
+        if kwargs:
+            kw = {k:self._encode_path(v) if isinstance(v, string_types) else str(v) for k, v in kwargs.items()}
+            return self._url_prefix + _path % kw
         else:
-            return self._url_prefix + path
+            return self._url_prefix + _path
 
     def close(self):
         if hasattr(self, '_session'):
@@ -108,11 +76,56 @@ class Session(object):
             del self._session
 
 class HasClient(object):
-    """Base wrapper for API resources"""
-
+    """Base class for API wrappers and utils"""
     def __init__(self, _client, **kwargs):
         self._client = _client
         self.__dict__.update(kwargs)
+
+class Resource(object):
+    """Base wrapper for API resources (singular objects with specific URL)"""
+    _lazy_attributes = ()
+    _url_template = "" # Whatever this depends on should not be in _lazy_attributes
+
+    def __init__(self, _client, **kwargs):
+        self._client = _client
+        self._modified = set()
+        self.__dict__.update(kwargs)
+        if '_url' not in kwargs:
+            self._url = self._client.get_url(self._url_template, **kwargs)
+    
+    def __getattr__(self, name):
+        """If attribute is in _lazyAtrributes yet we don't have it's value yet, fetch attributes from service."""
+        if name in self._lazy_attributes:
+            json = exc.default.check_json_response(self._client.get(self._url))
+            self._update_attributes(json)
+            if name in self.__dict__:
+                return self.__dict__[name]
+        raise AttributeError(self, name)
+
+    def _update_attributes(self, json_dict):
+        for key in set(self._lazy_attributes).difference(self._modified): # don't overwrite attributes modified by user
+            if key in json_dict:
+                self.__dict__[key] = json_dict[key]
+
+    def __setattr__(self, name, value):
+        """If attribute is in _lazy_attributes and new value is different than old one, mark attribute modified"""
+        if name in self._lazy_attributes:
+            old_value = getattr(self, name)
+            if old_value == value:
+                return
+            self._modified.add(name)
+        self.__dict__[name] = value
+
+    def __str__(self):
+        return "<%s: %s >" % (self.__class__.__name__, self._url)
+
+    __repr__ = __str__
+
+    def discard_changes(self):
+        for key in self._modified:
+            delattr(self, key)
+        self._modified = set()
+
 
 def get_access_token(config):
     session = Session(config)
@@ -123,7 +136,7 @@ def get_access_token(config):
         password=config['password'],
         grant_type="password",
     )
-    return default.check_json_response(session.POST(url, data))['access_token']
+    return exc.default.check_json_response(session.POST(url, data))['access_token']
 
 class _FileChunk(object):
     """Wrapped for chunk of the file that also calculates SHA256 checksum while file is read"""

@@ -176,4 +176,3 @@ created = ErrorMapping(ok_statuses=(http_client.CREATED,))
 created_ignore_existing = ErrorMapping(ok_statuses=(http_client.CREATED,), ignored_errors = [
     (u'Folder already exists at this location', {'http status': 403})
 ])
-

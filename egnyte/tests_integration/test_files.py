@@ -15,11 +15,11 @@ class TestFiles(TestCase):
         source = BytesIO(b'vijayendra')
         source.seek(0)
 
-        self.client.create_folder(self.root_folder.path)
-        self.client.put_file_contents(self.filepath, source)
+        self.client.folder(self.root_folder.path).create()
+        self.client.file(self.filepath).upload(source)
 
         dest = BytesIO()
-        self.client.get_file_contents(self.filepath).write_to(dest)
+        self.client.file(self.filepath).download().write_to(dest)
 
         dest.seek(0)
         source.seek(0)
@@ -28,22 +28,24 @@ class TestFiles(TestCase):
 
     def test_create_file_strings(self):
         source = b'vijayendra'
-        self.client.create_folder(self.root_folder.path)
-        self.client.put_file_contents(self.filepath, source)
+        self.client.folder(self.root_folder.path).create()
+        self.client.file(self.filepath).upload(source)
 
-        dest = self.client.get_file_contents(self.filepath).read()
+        dest = self.client.file(self.filepath).download().read()
 
         self.assertEqual(source, dest, "Uploaded and downloaded file's contents do not match")
 
     def test_create_file_chunked(self):
         source = BytesIO(b'0123456789'*1024*10) # 100k bytes
         source.seek(0)
-        self.client.upload_chunk_size = 40000
-        self.client.create_folder(self.root_folder.path)
-        self.client.put_file_contents(self.filepath, source)
+        self.client.folder(self.root_folder.path).create()
+
+        f = self.client.file(self.filepath)
+        f.upload_chunk_size = 40000
+        f.upload(source)
 
         dest = BytesIO()
-        self.client.get_file_contents(self.filepath).write_to(dest)
+        self.client.file(self.filepath).download().write_to(dest)
 
         dest.seek(0)
         source.seek(0)

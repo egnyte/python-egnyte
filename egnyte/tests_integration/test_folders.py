@@ -1,5 +1,4 @@
 from egnyte import exc
-from egnyte.base import Const
 
 from egnyte.tests_integration.config import TestCase
 
@@ -46,20 +45,15 @@ class TestFolders(TestCase):
         self.dest.delete()
 
     def test_folder_list(self):
-        self.client.create_folder(self.folder.path)
-        data = self.client.list_content(self.folder.path)
-        self.assertEqual(data['is_folder'], True)
-        self.assertTrue('folders' not in data)
-        self.client.delete_folder(self.folder.path)
-
-    def test_folder_link_create(self):
-        self.client.create_folder(self.folder.path)
-        data = self.client.link_create(
-            self.folder.path,
-            Const.LINK_KIND_FOLDER,
-            Const.LINK_ACCESSIBILITY_ANYONE,
-        )
-        url = data['links'][0]['url']
-        link = self.client.link_details(data['links'][0]['id'])
-        self.assertEqual(link['url'], url)
-        self.client.link_delete(data['links'][0]['id'])
+        folder = self.client.folder(self.folder.path).create()
+        subfolder = folder.folder("test1").create()
+        file = folder.file("test2")
+        file.upload(b"test111")
+        data = folder.list()
+        folders = list(data['folders'])
+        files = list(data['files'])
+        self.assertEqual(1, len(folders), "There should be one subfolder")
+        self.assertEqual(folders[0]._url, subfolder._url, "Subfolder URLs should be identical")
+        self.assertEqual(1, len(files), "There should be one filer")
+        self.assertEqual(files[0]._url, file._url, "File URLs should be identical")
+        folder.delete()
