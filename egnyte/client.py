@@ -1,6 +1,6 @@
 from __future__ import print_function
 
-from egnyte import exc, base, resources, const
+from egnyte import exc, base, resources
 
 class EgnyteClient(base.Session):
     """Main client objects. This should be the only object you have to manually create in standard API use."""
@@ -23,3 +23,7 @@ class EgnyteClient(base.Session):
     def links(self):
         """API for Links management"""
         return resources.Links(self)
+
+    def link(self, id):
+        """Get Link object by id"""
+        return resources.Link(self, id=id)

@@ -19,8 +19,7 @@ def createTestCase(config_file):
     TestCase.root_folder_name = root_folder_name
 
     return unittest.skipUnless(config.get('access_token') and config.get('domain'),
-            "No configuration for integration tests (%s), check doc/TESTS.md" % config_file)(TestCase)
+                               "No configuration for integration tests (%s), check doc/TESTS.md" % config_file)(TestCase)
 
 
-TestCase = createTestCase('test_config.json') # default test configuration
-
+TestCase = createTestCase('test_config.json')  # default test configuration

@@ -1,6 +1,7 @@
 import os.path
 import json
 
+
 def add_directory(filepath):
     """
     Add '~/.egnyte' in a platform independent way to a file path it it's relative.
@@ -8,6 +9,7 @@ def add_directory(filepath):
     if os.path.isabs(filepath):
         return filepath
     return os.path.join(os.path.expanduser('~'), '.egnyte', filepath)
+
 
 def load(filename=None):
     """
@@ -23,6 +25,7 @@ def load(filename=None):
     except IOError:
         pass
     return {}
+
 
 def save(config, filename=None):
     """

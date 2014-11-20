@@ -11,6 +11,7 @@ from egnyte import exc, configuration
 
 JSON_HEADERS = {'content-type': 'application/json'}
 
+
 class Session(object):
     """
     Provides persistent HTTPS connections to Egnyte API
@@ -65,7 +66,7 @@ class Session(object):
 
     def get_url(self, _path, **kwargs):
         if kwargs:
-            kw = {k:self._encode_path(v) if isinstance(v, string_types) else str(v) for k, v in kwargs.items()}
+            kw = {k: self._encode_path(v) if isinstance(v, string_types) else str(v) for k, v in kwargs.items()}
             return self._url_prefix + _path % kw
         else:
             return self._url_prefix + _path
@@ -75,16 +76,19 @@ class Session(object):
             self._session.close()
             del self._session
 
+
 class HasClient(object):
     """Base class for API wrappers and utils"""
+
     def __init__(self, _client, **kwargs):
         self._client = _client
         self.__dict__.update(kwargs)
 
+
 class Resource(object):
     """Base wrapper for API resources (singular objects with specific URL)"""
     _lazy_attributes = ()
-    _url_template = "" # Whatever this depends on should not be in _lazy_attributes
+    _url_template = ""  # Whatever this depends on should not be in _lazy_attributes
 
     def __init__(self, _client, **kwargs):
         self._client = _client
@@ -92,20 +96,23 @@ class Resource(object):
         self.__dict__.update(kwargs)
         if '_url' not in kwargs:
             self._url = self._client.get_url(self._url_template, **kwargs)
-    
+
     def __getattr__(self, name):
         """If attribute is in _lazyAtrributes yet we don't have it's value yet, fetch attributes from service."""
         if name in self._lazy_attributes:
-            json = exc.default.check_json_response(self._client.get(self._url))
-            self._update_attributes(json)
             if name in self.__dict__:
                 return self.__dict__[name]
         raise AttributeError(self, name)
 
     def _update_attributes(self, json_dict):
-        for key in set(self._lazy_attributes).difference(self._modified): # don't overwrite attributes modified by user
+        for key in set(self._lazy_attributes).difference(self._modified):  # don't overwrite attributes modified by user
             if key in json_dict:
                 self.__dict__[key] = json_dict[key]
+
+    def _fetch_attributes(self):
+        json = exc.default.check_json_response(self._client.GET(self._url))
+        self._update_attributes(json)
+        return json
 
     def __setattr__(self, name, value):
         """If attribute is in _lazy_attributes and new value is different than old one, mark attribute modified"""
@@ -116,15 +123,22 @@ class Resource(object):
             self._modified.add(name)
         self.__dict__[name] = value
 
-    def __str__(self):
-        return "<%s: %s >" % (self.__class__.__name__, self._url)
-
-    __repr__ = __str__
-
     def discard_changes(self):
         for key in self._modified:
             delattr(self, key)
         self._modified = set()
+
+    def check(self):
+        """
+        Check if this object exists in the cloud and current user has read permissions on it.
+        Will raise an exception otherwise.
+        """
+        self._fetch_attributes()
+
+    def __str__(self):
+        return "<%s: %s >" % (self.__class__.__name__, self._url)
+
+    __repr__ = __str__
 
 
 def get_access_token(config):
@@ -138,8 +152,10 @@ def get_access_token(config):
     )
     return exc.default.check_json_response(session.POST(url, data))['access_token']
 
+
 class _FileChunk(object):
     """Wrapped for chunk of the file that also calculates SHA256 checksum while file is read"""
+
     def __init__(self, fp, start, size):
         self.fp = fp
         self.position = start
@@ -159,6 +175,7 @@ class _FileChunk(object):
         self.left = self.size
         self.sha = hashlib.sha512()
 
+
 def split_file_into_chunks(fp, file_size, chunk_size):
     """
     Split file-like object into sequence of file-like objects, each of
@@ -172,10 +189,10 @@ def split_file_into_chunks(fp, file_size, chunk_size):
         yield _FileChunk(fp, position, min(chunk_size, file_size - position))
         position += chunk_size
 
+
 def get_file_size(fp):
     """Get size of the file or length of a bytes object"""
-    fp.seek(0, 2) # move the current position to the end of the file
+    fp.seek(0, 2)  # move the current position to the end of the file
     size = fp.tell()
-    fp.seek(0,0) # move the current position to the beginning of the file
+    fp.seek(0, 0)  # move the current position to the beginning of the file
     return size
-

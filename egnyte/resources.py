@@ -6,6 +6,7 @@ import six
 
 from egnyte import base, const, exc
 
+
 class FileOrFolder(base.Resource):
     """Things that are common to both files and folders."""
     _url_template = "pubapi/v1/fs%(path)s"
@@ -27,9 +28,9 @@ class FileOrFolder(base.Resource):
              expiry=None, add_filename=None):
         """Create a link to this."""
         return Links(self._client).create(path=self.path, kind=self._link_kind, accessibility=accessibility,
-            recipients=recipients, send_email=send_email, message=message,
-            copy_me=copy_me, notify=notify, link_to_current=link_to_current,
-            expiry=expiry, add_filename=add_filename)
+                                          recipients=recipients, send_email=send_email, message=message,
+                                          copy_me=copy_me, notify=notify, link_to_current=link_to_current,
+                                          expiry=expiry, add_filename=add_filename)
 
 
 class File(FileOrFolder):
@@ -38,7 +39,7 @@ class File(FileOrFolder):
     Does not have to exist - can represent a new file to be uploaded.
     path - file path
     """
-    _upload_chunk_size = 100 * (1024 * 1024) # 10 MB
+    _upload_chunk_size = 100 * (1024 * 1024)  # 10 MB
     _upload_chunk_retries = 3
     _link_kind = const.LINK_KIND_FILE
     _lazy_attributes = {'num_versions', 'name', 'checksum', 'last_modified', 'entry_id',
@@ -66,27 +67,35 @@ class File(FileOrFolder):
             our_sha = chunk.sha.hexdigest()
             if server_sha != our_sha:
                 raise exc.ChecksumError("Failed to upload file", {})
-        else: # chunked upload
+        else:  # chunked upload
             return self._chunked_upload(fp, size)
 
-    def download(self):
+    def download(self, download_range=None):
         """
         Download file contents.
         Returns a FileDownload.
+        Optional range is 2 integer sequence (start offset, end offset) used to download
+        only part of the file.
         """
         url = self._client.get_url(self._url_content_template, path=self.path)
-        r = exc.default.check_response(self._client.GET(url, stream=True))
+        if download_range is None:
+            r = exc.default.check_response(self._client.GET(url, stream=True))
+        else:
+            if len(download_range) != 2:
+                raise exc.InvalidParameters('Download range needs to be None or a 2 element integer sequence')
+            r = exc.partial.check_response(self._client.GET(url, stream=True,
+                                                            headers={'Range': 'bytes=%d-%d' % download_range}))
         return FileDownload(r)
 
     def _chunked_upload(self, fp, size):
         url = self._client.get_url(self._url_content_chunked_template, path=self.path)
-        chunks = list(base.split_file_into_chunks(fp, size, self._upload_chunk_size)) # need count of chunks
+        chunks = list(base.split_file_into_chunks(fp, size, self._upload_chunk_size))  # need count of chunks
         chunk_count = len(chunks)
         headers = {}
         for chunk_number, chunk in enumerate(chunks, 1):  # count from 1 not 0
             headers['x-egnyte-chunk-num'] = "%d" % chunk_number
             headers['content-length'] = chunk.size
-            if chunk_number == chunk_count: # last chunk
+            if chunk_number == chunk_count:  # last chunk
                 headers['x-egnyte-last-chunk'] = "true"
             retries = max(self._upload_chunk_retries, 1)
             while retries > 0:
@@ -152,7 +161,7 @@ class Folder(FileOrFolder):
         self._update_attributes(json)
         folders = (Folder(self._client, **folder_data) for folder_data in json.get('folders', ()))
         files = (File(self._client, **file_data) for file_data in json.get('files', ()))
-        return {'folders': folders, 'files': files }
+        return {'folders': folders, 'files': files}
 
 
 class FileDownload(object):
@@ -194,17 +203,19 @@ class FileDownload(object):
         """
         return self.response.iter_lines(**kwargs)
 
-    def iter_content(self, chunk_size = 16 * 1024):
+    def iter_content(self, chunk_size=16 * 1024):
         return self.response.iter_content(chunk_size)
+
 
 class Link(base.Resource):
     """Link to a file or folder"""
     _url_template = "pubapi/v1/links/%(id)s"
-    _lazy_attributes = {'copy_me', 'links', 'link_to_current', 'accessibility', 'notify',
-                       'path', 'creation_date', 'type', u'send_mail'}
+    _lazy_attributes = {'copy_me', 'link_to_current', 'accessibility', 'notify',
+                        'path', 'creation_date', 'type', 'send_mail'}
 
     def delete(self):
-        exc.default.check_response(self.DELETE(self._url))
+        exc.default.check_response(self._client.DELETE(self._url))
+
 
 class User(base.Resource):
     def apply_changes(self):
@@ -216,21 +227,26 @@ class User(base.Resource):
     def delete(self):
         pass
 
+
 class Files(base.HasClient):
     """
     Collection of files.
     """
 
+
 class Folders(base.HasClient):
     """Collection of folders"""
 
+
 class Links(base.HasClient):
     """Collection of links"""
+
     def create(self, path, kind, accessibility,
-                    recipients=None, send_email=None, message=None,
-                    copy_me=None, notify=None, link_to_current=None,
-                    expiry=None, add_filename=None,
-                    ):
+               recipients=None, send_email=None, message=None,
+               copy_me=None, notify=None, link_to_current=None,
+               expiry=None, add_filename=None,
+               ):
+        """Creare links. Will return sequence of links of created, one for each recipient"""
         url = self._client.get_url("pubapi/v1/links")
         if kind not in const.LINK_KIND_LIST:
             raise exc.InvalidParameters('kind', kind)
@@ -260,15 +276,22 @@ class Links(base.HasClient):
                 data["expiryDate"] = expiry.strftime("%Y-%m-%d")
         if message is not None:
             data['message'] = message
-        r = exc.default.check_json_response(self._client.POST(url, data))
-        print r
-        return Link(self._client, **r)
+        response = exc.default.check_json_response(self._client.POST(url, data))
+        # This response has weird structure
+        links = response.pop('links')
+        result = []
+        for l in links:
+            l.update(response)
+            result.append(Link(self._client, **l))
+        return result
 
     def get(self, id):
         return Link(self._client, id=id)
 
+
 class Users(base.HasClient):
     """Collection of users"""
+
     def users_where(self, where):
         return Users(self._client, where=where)
 
@@ -281,7 +304,5 @@ class Users(base.HasClient):
     def user_by_email(self, email):
         return User(self._client, email=email)
 
-    #def create_user(self, **kwargs):
+    # def create_user(self, **kwargs):
     #    return .User(self, **kwargs)
-
-

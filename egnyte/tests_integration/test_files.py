@@ -1,7 +1,5 @@
 from six import BytesIO
 
-from egnyte import exc
-
 from egnyte.tests_integration.config import TestCase
 
 
@@ -36,7 +34,7 @@ class TestFiles(TestCase):
         self.assertEqual(source, dest, "Uploaded and downloaded file's contents do not match")
 
     def test_create_file_chunked(self):
-        source = BytesIO(b'0123456789'*1024*10) # 100k bytes
+        source = BytesIO(b'0123456789' * 1024 * 10)  # 100k bytes
         source.seek(0)
         self.client.folder(self.root_folder.path).create()
 
@@ -51,3 +49,12 @@ class TestFiles(TestCase):
         source.seek(0)
 
         self.assertEqual(source.read(), dest.read(), "Uploaded and downloaded file's contents do not match")
+
+        partial_start = 5009
+        partial_size = 104
+        partial = f.download((partial_start, partial_start + partial_size - 1))
+        source.seek(partial_start)
+
+        source_content = source.read(partial_size)
+        partial_content = partial.read()
+        self.assertEqual(source_content, partial_content, "Partial download content does not match")

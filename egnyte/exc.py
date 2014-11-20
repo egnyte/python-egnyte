@@ -72,6 +72,7 @@ class DuplicateRecordExists(EgnyteError):
 class FileSizeExceedsLimit(EgnyteError):
     """File is too large for this operation."""
 
+
 class ChecksumError(EgnyteError):
     """Checksum of the uploaded file is different than checksum calculated locally - file was corrupted during transfer."""
 
@@ -98,6 +99,7 @@ def extract_errors(data):
                 yield err
     else:
         yield data
+
 
 def recursive_tuple(data):
     """Convert nested lists/dicts into tuples for structural comparing"""
@@ -154,7 +156,7 @@ class ErrorMapping(dict):
     def ignore_error(self, errors):
         errors = recursive_tuple(errors)
         if errors and self.ignored_errors:
-            result = any( (errors == ignored) for ignored in self.ignored_errors)
+            result = any((errors == ignored) for ignored in self.ignored_errors)
             return result
 
     def check_json_response(self, response, *ok_statuses):
@@ -172,7 +174,8 @@ class ErrorMapping(dict):
         return self.__class__(self)
 
 default = ErrorMapping()
-created = ErrorMapping(ok_statuses=(http_client.CREATED,))
+partial = ErrorMapping(ok_statuses={http_client.PARTIAL_CONTENT})
+created = ErrorMapping(ok_statuses={http_client.CREATED})
 created_ignore_existing = ErrorMapping(ok_statuses=(http_client.CREATED,), ignored_errors = [
     (u'Folder already exists at this location', {'http status': 403})
 ])
