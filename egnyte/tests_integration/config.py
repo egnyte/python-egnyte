@@ -4,7 +4,7 @@ def createTestCase(config_file):
     from egnyte import configuration, client
 
     config = configuration.load(config_file)
-    root_folder_name = '/Shared/integration_test_python/%s' % hashlib.sha256(config.get('access_token', '')).hexdigest()
+    root_folder_name = '/Shared/integration_test_python/%s' % hashlib.sha256(config.get('access_token', '').encode('ASCII')).hexdigest()
 
     class TestCase(unittest.TestCase):
         def setUp(self):

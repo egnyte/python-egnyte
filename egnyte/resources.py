@@ -176,10 +176,9 @@ class Folder(FileOrFolder):
         url = self._client.get_url(self._url_template_permissions, path=self.path)
         r = exc.default.check_json_response(self._client.GET(url, params=query_params))
         return Permissions(r)
-        
+
     def get_effective_permissions(self, username):
         url = self._client.get_url(self._url_template_effective_permissions, username=username)
-        print url
         r = exc.default.check_json_response(self._client.GET(url, params=dict(folder=self.path)))
         return r
 
@@ -313,6 +312,3 @@ class Permissions(object):
         for d in self._groups:
             self.group_to_permission[d['subject']] = d['permission']
             self.permission_to_owner[d['permission']]['groups'].add(d['subject'])
-
-    
-

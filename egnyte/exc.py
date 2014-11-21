@@ -104,9 +104,12 @@ def extract_errors(data):
 def recursive_tuple(data):
     """Convert nested lists/dicts into tuples for structural comparing"""
     if isinstance(data, (list, tuple)):
-        return tuple(sorted(recursive_tuple(x) for x in data))
+        return tuple(recursive_tuple(x) for x in data)
     elif isinstance(data, dict):
-        return tuple(sorted((recursive_tuple(x), recursive_tuple(y)) for (x, y) in data.items()))
+        # We cannot use plain tuple(sorted(...)) here, because while it works giving us stable sort
+        # in Python 2.7, it does not in Python 3 (results in TypeError: unorderable types
+        # so we'll sort dictonaries first and then turn into tuples
+        return tuple((recursive_tuple(x), recursive_tuple(y)) for (x, y) in sorted(data.items()))
     return data
 
 
