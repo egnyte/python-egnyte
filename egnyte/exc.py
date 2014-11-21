@@ -27,6 +27,8 @@ class InsufficientPermissions(EgnyteError):
 class NotFound(EgnyteError):
     """Resource with name does not exist"""
 
+class Redirected(EgnyteError):
+    """Received unexpected HTTP 303 respone"""
 
 class NotAuthorized(EgnyteError):
     """Access token is required"""
@@ -125,6 +127,7 @@ class ErrorMapping(dict):
             http_client.NOT_FOUND: NotFound,
             http_client.CONFLICT: DuplicateRecordExists,
             http_client.REQUEST_ENTITY_TOO_LARGE: FileSizeExceedsLimit,
+            http_client.SEE_OTHER: Redirected,
         })
         if values:
             self.update(values)
@@ -178,6 +181,7 @@ class ErrorMapping(dict):
 
 default = ErrorMapping()
 partial = ErrorMapping(ok_statuses={http_client.PARTIAL_CONTENT})
+accepted = ErrorMapping(ok_statuses={http_client.ACCEPTED})
 created = ErrorMapping(ok_statuses={http_client.CREATED})
 created_ignore_existing = ErrorMapping(ok_statuses=(http_client.CREATED,), ignored_errors = [
     (u'Folder already exists at this location', {'http status': 403})

@@ -47,7 +47,7 @@ class Session(object):
 
     def GET(self, url, **kwargs):
         self._respect_limits()
-        return self._session.get(url, **kwargs)
+        return self._session.get(url, allow_redirects=False, **kwargs)
 
     def POST(self, url, json_data=None, **kwargs):
         self._respect_limits()
@@ -236,11 +236,10 @@ class FileDownload(object):
 
     def __iter__(self, **kwargs):
         """
-        Iterate resposne body line by line.
+        Iterate response body line by line.
         You can speficify alternate delimiter with delimiter parameter.
         """
         return self.response.iter_lines(**kwargs)
 
     def iter_content(self, chunk_size=16 * 1024):
         return self.response.iter_content(chunk_size)
-

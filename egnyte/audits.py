@@ -6,12 +6,10 @@ class Audits(base.HasClient):
     """
     This resource is used to generated various kinds of audit reports.
     """
-    _url_logins = "pubapi/v1/audit/logins"
-    _url_files = "pubapi/v1/audit/files"
-    _url_permissions = "pubapi/v1/audit/permissions"
+    _url_template = "pubapi/v1/audit/%(type)s"
 
     def _job_id(self, response):
-        json = exc.default.check_json_response(response)
+        json = exc.accepted.check_json_response(response)
         return json['id']
 
     def logins(self, format, date_start, date_end, events, access_points=None, users=None):
@@ -27,11 +25,12 @@ class Audits(base.HasClient):
                     date_start=base.date_format(date_start),
                     date_end=base.date_format(date_end),
                     events=list(events))
-        if access_points is not None:
+        if access_points:
             json['access_points'] = list(access_points)
-        if users is not None:
+        if users:
             json['users'] = list(users)
-        r = self._client.POST(self._client.get_url(self._url_logins), json)
+        url = self._client.get_url(self._url_template, type="logins")
+        r = self._client.POST(url, json)
         return AuditReport(self._client, id=self._job_id(r), format=format, type='logins')
 
     def files(self, format, date_start, date_end, folders=None, file=None, users=None, transaction_type=None):
@@ -46,15 +45,16 @@ class Audits(base.HasClient):
         json = dict(format=format,
                     date_start=base.date_format(date_start),
                     date_end=base.date_format(date_end))
-        if folders is not None:
+        if folders:
             json['folders'] = list(folders)
-        if file is not None:
+        if file:
             json['file'] = file
-        if users is not None:
+        if users:
             json['users'] = list(users)
-        if transaction_type is not None:
+        if transaction_type:
             json['transaction_type'] = list(transaction_type)
-        r = self._client.POST(self._client.get_url(self._url_files), json)
+        url = self._client.get_url(self._url_template, type="files")
+        r = self._client.POST(url, json)
         return AuditReport(self._client, id=self._job_id(r), format=format, type='files')
 
     def permissions(self, format, date_start, date_end, folders, assigners, assignee_users, assignee_groups):
@@ -73,26 +73,52 @@ class Audits(base.HasClient):
                     assigners=list(assigners),
                     assignee_users=list(assignee_users),
                     assignee_groups=list(assignee_groups))
-        r = self._client.POST(self._client.get_url(self._url_permissions), json)
+        url = self._client.get_url(self._url_template, type="permissions")
+        r = self._client.POST(url, json)
         return AuditReport(self._client, id=self._job_id(r), format=format, type='permissions')
+
+    def get(self, id):
+      """Get a previously generated report by it's id"""
+      return AuditReport(self._client, id=id)
+
+
 
 
 class AuditReport(base.Resource):
     _url_template = "pubapi/v1/audit/jobs/%(id)s"
     _url_template_completed = "pubapi/v1/audit/%(type)s/%(id)s"
-    _lazy_attributes = {'status'}
+    status = 'running'
 
     def is_ready(self):
-        self.check()
-        return self.status == 'completed'
+        """
+        True if report is ready to be downloaded.
+        Does a single API request.
+        """
+        r = self._client.GET(self._url)
+        if r.status_code == 303:
+            self.status == 'completed'
+            return True
+        exc.default.check_response(r)
+        return False
+
+    def wait(self, check_time = 5.0):
+        """
+        Block until report is ready.
+        Propably only useful for command line applications.
+        """
+        import time
+        while not self.is_ready():
+            time.sleep(check_time)
+
+    def complete_url(self):
+        url = self._client.get_url(self._url_template_completed, type=self.type, id=self.id)
+        return url
 
     def download(self):
-        url = self._client.get_url(self._url_template_completed, type=self.type, id=self.id)
-        r = self._client.GET(url, stream=True)
+        r = self._client.GET(self.complete_url(), stream=True)
         exc.default.check_response(r)
         return base.FileDownload(r)
 
     def json(self):
-        url = self._client.get_url(self._url_template_completed, type=self.type, id=self.id)
-        r = self._client.GET(url)
+        r = self._client.GET(self.complete_url())
         return exc.default.check_json_response(r)
