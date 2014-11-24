@@ -11,95 +11,113 @@ from contextlib import closing
 
 from egnyte import client, configuration, exc, base
 
-parser = argparse.ArgumentParser(prog="python -m egnyte")
-parser.add_argument("-c", "--config-path", help="Path to config file")
+def create_parser():
+    main = argparse.ArgumentParser(prog="python -m egnyte")
+    main.add_argument("-c", "--config-path", help="Path to config file")
+    main.add_argument('-v', '--verbose', action='count', dest='verbosity', help="Be more verbose. Can be repeated for debugging", default=0)
 
-subparsers = parser.add_subparsers()
+    subparsers = main.add_subparsers()
 
-parser_config = subparsers.add_parser('config', help='commands related to configuration')
-subparsers_config = parser_config.add_subparsers()
+    parser_config = subparsers.add_parser('config', help='commands related to configuration')
+    subparsers_config = parser_config.add_subparsers()
 
-parser_config_show = subparsers_config.add_parser('show', help="show configuration")
-parser_config_show.set_defaults(command="config_show")
+    parser_config_show = subparsers_config.add_parser('show', help="show configuration")
+    parser_config_show.set_defaults(command="config_show")
 
-parser_config_create = subparsers_config.add_parser('create', help='create a new configuration file')
-parser_config_create.set_defaults(command="config_create")
+    parser_config_create = subparsers_config.add_parser('create', help='create a new configuration file')
+    parser_config_create.set_defaults(command="config_create")
 
-parser_config_update = subparsers_config.add_parser('update', help='update a configuration file')
-parser_config_update.set_defaults(command="config_update")
+    parser_config_update = subparsers_config.add_parser('update', help='update a configuration file')
+    parser_config_update.set_defaults(command="config_update")
 
-parser_config_token = subparsers_config.add_parser('token', help='generate a new access token and store it in config file')
-parser_config_token.set_defaults(command="config_token")
+    parser_config_token = subparsers_config.add_parser('token', help='generate a new access token and store it in config file')
+    parser_config_token.set_defaults(command="config_token")
 
-parser_token = subparsers.add_parser('token', help='generate a new access token and print it')
-parser_token.set_defaults(command='token')
+    parser_token = subparsers.add_parser('token', help='generate a new access token and print it')
+    parser_token.set_defaults(command='token')
 
-parser_test = subparsers.add_parser('test', help='test if config is correct (connects to service)')
-parser_test.set_defaults(command='test')
+    parser_test = subparsers.add_parser('test', help='test if config is correct (connects to service)')
+    parser_test.set_defaults(command='test')
 
-for p, required in [
-        (parser_config_create, True),
-        (parser_config_update, False),
-        (parser_token, False),
-    ]:
-    p.add_argument('-d', '--domain', required=required, help='domain name')
-    p.add_argument('-l', '--login', required=False, help='login')
-    p.add_argument('-p', '--password', required=False, help='password')
-    p.add_argument('-k', '--key', dest='api_key', required=required, help='API key')
+    for parser, required in [ (parser_config_create, True), (parser_config_update, False), (parser_token, False) ]:
+        parser.add_argument('-d', '--domain', required=required, help='domain name')
+        parser.add_argument('-l', '--login', required=False, help='login')
+        parser.add_argument('-p', '--password', required=False, help='password')
+        parser.add_argument('-k', '--key', dest='api_key', required=required, help='API key')
 
-for p in (parser_config_create, parser_config_update):
-    p.add_argument('-t', '--token', dest='access_token', required=False, help='API access token')
+    for parser in (parser_config_create, parser_config_update):
+        parser.add_argument('-t', '--token', dest='access_token', required=False, help='API access token')
 
-# Audit generator
+    # Audit generator
 
-parser_audit = subparsers.add_parser('audit', help='generate audit reports')
-subparsers_audit = parser_audit.add_subparsers()
+    parser_audit = subparsers.add_parser('audit', help='generate audit reports')
+    subparsers_audit = parser_audit.add_subparsers()
 
-parser_audit_files = subparsers_audit.add_parser('files', help="create Files report")
-parser_audit_files.set_defaults(command="audit_files")
+    parser_audit_files = subparsers_audit.add_parser('files', help="create Files report")
+    parser_audit_files.set_defaults(command="audit_files")
 
-parser_audit_logins = subparsers_audit.add_parser('logins', help="create Logins report")
-parser_audit_logins.set_defaults(command="audit_logins")
+    parser_audit_logins = subparsers_audit.add_parser('logins', help="create Logins report")
+    parser_audit_logins.set_defaults(command="audit_logins")
 
-parser_audit_permissions = subparsers_audit.add_parser('permissions', help="create Permissions report")
-parser_audit_permissions.set_defaults(command="audit_permissions")
+    parser_audit_permissions = subparsers_audit.add_parser('permissions', help="create Permissions report")
+    parser_audit_permissions.set_defaults(command="audit_permissions")
 
-parser_audit_get = subparsers_audit.add_parser('get', help="get a previously generated report")
-parser_audit_get.set_defaults(command="audit_get")
+    parser_audit_get = subparsers_audit.add_parser('get', help="get a previously generated report")
+    parser_audit_get.set_defaults(command="audit_get")
 
-# Common options
-for p in (parser_audit_files, parser_audit_logins, parser_audit_permissions, parser_audit_get):
-    p.add_argument('--save', required=False, default=None, help="File to save to the report to (default is standard output)")
+    # Common options
+    for parser in (parser_audit_files, parser_audit_logins, parser_audit_permissions, parser_audit_get):
+        parser.add_argument('--save', required=False, default=None, help="File to save to the report to (default is standard output)")
 
-for p in (parser_audit_files, parser_audit_logins, parser_audit_permissions):
-    p.add_argument('--format', required=False, default="csv", help="Report type (json or csv. Default is csv)")
-    p.add_argument('--start', required=False, default='yesterday', help='Start date (YYYY-MM-DD)')
-    p.add_argument('--end', required=False, default='today', help='End date (YYYY-MM-DD)')
+    for parser in (parser_audit_files, parser_audit_logins, parser_audit_permissions):
+        parser.add_argument('--format', required=False, default="csv", help="Report type (json or csv. Default is csv)")
+        parser.add_argument('--start', required=False, default='yesterday', help='Start date (YYYY-MM-DD)')
+        parser.add_argument('--end', required=False, default='today', help='End date (YYYY-MM-DD)')
+
+    parser_audit_files.add_argument('--folder', required=False, action='append', default=None, help="Absolute folder path for the destination folder. 'folder' or 'file' is required. Can be used multiple times")
+    parser_audit_files.add_argument('--file', required=False, default=None, help="Absolute folder path for the destination file, wildcards allowed. 'folder' or 'file' is required")
+    parser_audit_files.add_argument('--users', required=False, default=None, help='Users to report on (comma separated list, default is all)')
+    parser_audit_files.add_argument('--transaction_type', required=False, default=None, help="""
+    Transaction type: upload, download, preview, delete, copy, move, restore_trash, delete_trash, create_link, delete_link, download_link
+    (comma separated list, default is all""")
+
+    parser_audit_logins.add_argument('--events', required=True, help="Event types: logins, logouts, account_lockouts, password_resets, failed_attempts (comma separated list)")
+    parser_audit_logins.add_argument('--access-points', required=False, default=None, help="Access points to cover: Web, FTP, Mobile (comma separated list, default is all)")
+    parser_audit_logins.add_argument('--users', required=False, default=None, help='Users to report on (comma separated list, default is all)')
+
+    parser_audit_permissions.add_argument('--assigners', required=True, help='Permission assigners (comma separated list)')
+    parser_audit_permissions.add_argument('--folder', required=True, action='append', default=None, help="Absolute folder path for the destination folder. Can be used multiple times")
+    parser_audit_permissions.add_argument('--users', required=False, default=None, help='Users to report on (comma separated list)')
+    parser_audit_permissions.add_argument('--groups', required=False, default=None, help='Groups to report on (comma separated list)')
+
+    parser_audit_get.add_argument('--id', required=True, help="Id of the report")
+
+    parser_upload = subparsers.add_parser('upload', help='send files to Egnyte')
+    parser_upload.set_defaults(command="upload")
+
+    parser_upload.add_argument('paths', nargs='+', help="Paths (files to directories) to upload")
+    parser_upload.add_argument('target', help="Path in Cloud File System to upload to")
+
+    parser_download = subparsers.add_parser('download', help='download files from Egnyte')
+    parser_download.set_defaults(command="download")
+
+    parser_download.add_argument('paths', nargs='+', help="Paths (files to directories) to download")
+    parser_download.add_argument('--target', help="Local directory to put downloaded files and directories in", default=None)
+
+    for parser in (parser_upload, parser_download):
+        parser.add_argument('-x', '--exclude', action='append', default=None, help='Exclude items that match this glob pattern')
 
 
-parser_audit_files.add_argument('--folder', required=False, action='append', default=None, help="Absolute folder path for the destination folder. 'folder' or 'file' is required. Can be used multiple times")
-parser_audit_files.add_argument('--file', required=False, default=None, help="Absolute folder path for the destination file, wildcards allowed. 'folder' or 'file' is required")
-parser_audit_files.add_argument('--users', required=False, default=None, help='Users to report on (comma separated list, default is all)')
-parser_audit_files.add_argument('--transaction_type', required=False, default=None, help="""
-Transaction type: upload, download, preview, delete, copy, move, restore_trash, delete_trash, create_link, delete_link, download_link
-(comma separated list, default is all""")
+    return main
 
-parser_audit_logins.add_argument('--events', required=True, help="Event types: logins, logouts, account_lockouts, password_resets, failed_attempts (comma separated list)")
-parser_audit_logins.add_argument('--access-points', required=False, default=None, help="Access points to cover: Web, FTP, Mobile (comma separated list, default is all)")
-parser_audit_logins.add_argument('--users', required=False, default=None, help='Users to report on (comma separated list, default is all)')
-
-parser_audit_permissions.add_argument('--assigners', required=True, help='Permission assigners (comma separated list)')
-parser_audit_permissions.add_argument('--folder', required=True, action='append', default=None, help="Absolute folder path for the destination folder. Can be used multiple times")
-parser_audit_permissions.add_argument('--users', required=False, default=None, help='Users to report on (comma separated list)')
-parser_audit_permissions.add_argument('--groups', required=False, default=None, help='Groups to report on (comma separated list)')
-
-parser_audit_get.add_argument('--id', required=True, help="Id of the report")
 
 class Commands(object):
     _config = None
     config_keys = ('login', 'password', 'domain', 'api_key', 'access_token')
     STATUS_CMD_NOT_FOUND = 1
     STATUS_API_ERROR = 2
+    INFO = 1
+    DEBUG = 2
 
     def load_config(self):
         if self._config is None:
@@ -114,17 +132,32 @@ class Commands(object):
     def __init__(self, args):
         self.args = args
 
+    @property
+    def info(self):
+        """If verbosity is INFO or better"""
+        return self.args.verbosity >= self.INFO
+
+    @property
+    def debug(self):
+        """If verbosity is INFO or better"""
+        return self.args.verbosity >= self.DEBUG
+
     def run(self):
         if not hasattr(self.args, 'command'):
             print("Use -h or --help for help")
             return
+
         method = getattr(self, "cmd_%s" % self.args.command, None)
+        if self.debug:
+            print("running %s" % method.__name__)
         if method is None:
             print("Command '%s' not implemented yet" % self.args.command.replace('_', ' '))
             return self.STATUS_CMD_NOT_FOUND
         try:
             return method()
         except exc.EgnyteError as e:
+            if self.debug:
+                raise
             print(repr(e))
             return self.STATUS_API_ERROR
 
@@ -238,8 +271,73 @@ class Commands(object):
         report = audits.logins(*self.common_audit_args(), events=events, access_points=access_points, users=users)
         return self.wait_and_save_report(report)
 
+    def transfer_callbacks(self):
+        if self.info:
+            if sys.stdout.isatty():
+                return TerminalCallbacks()
+            else:
+                return VerboseCallbacks()
+
+    def cmd_upload(self):
+        api = client.EgnyteClient(self.config)
+        api.bulk_upload(self.args.paths, self.args.target, self.args.exclude, self.transfer_callbacks())
+
+    def cmd_download(self):
+        api = client.EgnyteClient(self.config)
+        print()
+        
+
+
+class VerboseCallbacks(client.ProgressCallbacks):
+    """Progress callbacks used when sys.stdout is a file or a pipe"""
+    def write(self, text):
+        print(text)
+
+    def getting_info(self, cloud_path):
+        self.write("Getting info about %s" % cloud_path)
+
+    def got_info(self, cloud_obj):
+        self.write("Got info about %s" % cloud_obj.path)
+
+    def download_start(self, local_path, cloud_file, size):
+        self.write("Downloading %s" % local_path)
+        self.current = local_path
+
+    def upload_start(self, local_path, cloud_file, size):
+        self.write("Uploading %s" % local_path)
+        self.current = local_path
+
+    def creating_directory(self, cloud_folder):
+        self.write("Creating directory %s" % cloud_folder.path)
+
+
+class TerminalCallbacks(VerboseCallbacks):
+    """Progress callbacks used when sys.stdout is a terminal"""
+    def __init__(self):
+        self.last_len = 0
+
+    def write(self, text):
+        output = ["\r"]
+        sys.stdout.write("\r") # return the carret
+        if len(text) < self.last_len: # clear out previous text
+            sys.stdout.write(' ' * self.last_len)
+            sys.stdout.write("\r") # return the carret
+        output.append(text)
+        sys.stdout.write("".join(output))
+        sys.stdout.flush()
+        self.last_len = len(text)
+
+    def download_progress(self, cloud_file, size, downloaded):
+        self.write("Downloading %s, %d%% complete" % (self.current, (downloaded*100)/size))
+
+    def upload_progress(self, cloud_file, size, uploaded):
+        self.write("Uploading %s, %d%%" % (self.current, (uploaded*100)/size))
+
+    def finished(self):
+        self.write("Finished\n")
+
 def main():
-    parsed = parser.parse_args()
+    parsed = create_parser().parse_args()
     sys.exit(Commands(parsed).run())
 
 if __name__ == '__main__':

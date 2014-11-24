@@ -9,6 +9,7 @@ from egnyte import base, const, exc
 class FileOrFolder(base.Resource):
     """Things that are common to both files and folders."""
     _url_template = "pubapi/v1/fs%(path)s"
+    _lazy_attributes = {'name', 'folder_id', 'is_folder'}
 
     def _action(self, action, destination):
         exc.default.check_response(self._client.POST(self._url, dict(action=action, destination=destination)))
@@ -38,19 +39,20 @@ class File(FileOrFolder):
     Does not have to exist - can represent a new file to be uploaded.
     path - file path
     """
-    _upload_chunk_size = 100 * (1024 * 1024)  # 10 MB
-    _upload_chunk_retries = 3
+    _upload_chunk_size = 100 * (1024 * 1024)  # 100 MB
+    _upload_retries = 3
     _link_kind = const.LINK_KIND_FILE
     _lazy_attributes = {'num_versions', 'name', 'checksum', 'last_modified', 'entry_id',
                         'uploaded_by', 'size', 'is_folder'}
     _url_template_content = "pubapi/v1/fs-content%(path)s"
     _url_template_content_chunked = "pubapi/v1/fs-content-chunked%(filepath)s"
 
-    def upload(self, fp, size=None):
+    def upload(self, fp, size=None, progress_callback=None):
         """
         Upload file contents.
         fp can be any file-like object, but if you don't specify it's size in
         advance it must support tell and seek methods.
+        Progress callback is optional - if provided, it should match signature of ProgressCallbacks.upload_progress
         """
         if isinstance(fp, six.binary_type):
             fp = six.BytesIO(fp)
@@ -58,16 +60,22 @@ class File(FileOrFolder):
             size = base.get_file_size(fp)
         if size < self._upload_chunk_size:
             # simple, one request upload
-            url = self._client.get_url(self._url_template_content, path=self.path)
-            chunk = base._FileChunk(fp, 0, size)
-            r = self._client.POST(url, data=chunk, headers={'Content-length': size})
-            exc.default.check_response(r)
-            server_sha = r.headers['X-Sha512-Checksum']
-            our_sha = chunk.sha.hexdigest()
-            if server_sha != our_sha:
+            retries = max(self._upload_retries, 1)
+            while retries > 0:
+                url = self._client.get_url(self._url_template_content, path=self.path)
+                chunk = base._FileChunk(fp, 0, size)
+                r = self._client.POST(url, data=chunk, headers={'Content-length': size})
+                exc.default.check_response(r)
+                server_sha = r.headers['X-Sha512-Checksum']
+                our_sha = chunk.sha.hexdigest()
+                if server_sha == our_sha:
+                    break
+                retries -= 1
+                # TODO: retry network errors too
+            if retries == 0:
                 raise exc.ChecksumError("Failed to upload file", {})
         else:  # chunked upload
-            return self._chunked_upload(fp, size)
+            return self._chunked_upload(fp, size, progress_callback)
 
     def download(self, download_range=None):
         """
@@ -86,7 +94,7 @@ class File(FileOrFolder):
                                                             headers={'Range': 'bytes=%d-%d' % download_range}))
         return base.FileDownload(r)
 
-    def _chunked_upload(self, fp, size):
+    def _chunked_upload(self, fp, size, progress_callback):
         url = self._client.get_url(self._url_template_content_chunked, path=self.path)
         chunks = list(base.split_file_into_chunks(fp, size, self._upload_chunk_size))  # need count of chunks
         chunk_count = len(chunks)
@@ -96,7 +104,7 @@ class File(FileOrFolder):
             headers['content-length'] = chunk.size
             if chunk_number == chunk_count:  # last chunk
                 headers['x-egnyte-last-chunk'] = "true"
-            retries = max(self._upload_chunk_retries, 1)
+            retries = max(self._upload_retries, 1)
             while retries > 0:
                 r = self._client.POST(url, data=chunk, headers=headers)
                 server_sha = r.headers['x-egnyte-chunk-sha512-checksum']
@@ -104,16 +112,15 @@ class File(FileOrFolder):
                 if server_sha == our_sha:
                     break
                 retries -= 1
+                # TODO: retry network errors too
+                # TODO: refactor common parts of chunked and standard upload
             if retries == 0:
                 raise exc.ChecksumError("Failed to upload file chunk", {"chunk_number": chunk_number, "start_position": chunk.position})
             exc.default.check_response(r)
             if chunk_number == 1:
                 headers['x-egnyte-upload-id'] = r.headers['x-egnyte-upload-id']
-
-    def apply_changes(self):
-        """Save changed properties of an existing folder."""
-        raise NotImplementedError()
-
+            if progress_callback is not None:
+                progress_callback(self, size, chunk_number * self._upload_chunk_size)
 
 class Folder(FileOrFolder):
     """
@@ -125,18 +132,16 @@ class Folder(FileOrFolder):
     _url_template_effective_permissions = "pubabi/v1/perms/user/%(username)s"
     _lazy_attributes = {'name', 'folder_id', 'is_folder'}
     _link_kind = const.LINK_KIND_FOLDER
+    folders = None
+    files = None
 
-    def folder(self, path):
+    def folder(self, path, **kwargs):
         """Return a subfolder of this folder."""
-        return Folder(self._client, path=self.path + '/' + path)
+        return Folder(self._client, path=self.path + '/' + path, **kwargs)
 
-    def file(self, filename):
+    def file(self, filename, **kwargs):
         """Return a file in this folder."""
-        return File(self._client, folder=self, filename=filename, path=self.path + '/' + filename)
-
-    def apply_changes(self):
-        """Save changed properties of an existing folder."""
-        raise NotImplementedError()
+        return File(self._client, folder=self, filename=filename, path=self.path + '/' + filename, **kwargs)
 
     def create(self, ignore_if_exists=True):
         """
@@ -160,9 +165,9 @@ class Folder(FileOrFolder):
         """
         json = exc.default.check_json_response(self._client.GET(self._url))
         self._update_attributes(json)
-        folders = (Folder(self._client, **folder_data) for folder_data in json.get('folders', ()))
-        files = (File(self._client, **file_data) for file_data in json.get('files', ()))
-        return {'folders': folders, 'files': files}
+        self.folders = [Folder(self._client, **folder_data) for folder_data in json.get('folders', ())]
+        self.files = [File(self._client, **file_data) for file_data in json.get('files', ())]
+        return self
 
     def get_permissions(self, users=None, groups=None):
         """
@@ -181,10 +186,6 @@ class Folder(FileOrFolder):
         url = self._client.get_url(self._url_template_effective_permissions, username=username)
         r = exc.default.check_json_response(self._client.GET(url, params=dict(folder=self.path)))
         return r
-
-
-
-
 
 
 class Link(base.Resource):
@@ -312,3 +313,5 @@ class Permissions(object):
         for d in self._groups:
             self.group_to_permission[d['subject']] = d['permission']
             self.permission_to_owner[d['permission']]['groups'].add(d['subject'])
+
+

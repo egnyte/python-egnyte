@@ -1,7 +1,14 @@
-import json
-import time
-import hashlib
+from __future__ import print_function
+
 from contextlib import closing
+#import collections
+import hashlib
+import json
+import os
+import os.path
+import time
+import fnmatch
+import re
 
 from six import string_types
 from six.moves.urllib.parse import quote
@@ -93,7 +100,6 @@ class Resource(object):
 
     def __init__(self, _client, **kwargs):
         self._client = _client
-        self._modified = set()
         self.__dict__.update(kwargs)
         if '_url' not in kwargs:
             self._url = self._client.get_url(self._url_template, **kwargs)
@@ -101,12 +107,14 @@ class Resource(object):
     def __getattr__(self, name):
         """If attribute is in _lazyAtrributes yet we don't have it's value yet, fetch attributes from service."""
         if name in self._lazy_attributes:
+            if name not in self.__dict__:
+                self._fetch_attributes()
             if name in self.__dict__:
                 return self.__dict__[name]
         raise AttributeError(self, name)
 
     def _update_attributes(self, json_dict):
-        for key in set(self._lazy_attributes).difference(self._modified):  # don't overwrite attributes modified by user
+        for key in self._lazy_attributes:
             if key in json_dict:
                 self.__dict__[key] = json_dict[key]
 
@@ -114,20 +122,6 @@ class Resource(object):
         json = exc.default.check_json_response(self._client.GET(self._url))
         self._update_attributes(json)
         return json
-
-    def __setattr__(self, name, value):
-        """If attribute is in _lazy_attributes and new value is different than old one, mark attribute modified"""
-        if name in self._lazy_attributes:
-            old_value = getattr(self, name)
-            if old_value == value:
-                return
-            self._modified.add(name)
-        self.__dict__[name] = value
-
-    def discard_changes(self):
-        for key in self._modified:
-            delattr(self, key)
-        self._modified = set()
 
     def check(self):
         """
@@ -243,3 +237,34 @@ class FileDownload(object):
 
     def iter_content(self, chunk_size=16 * 1024):
         return self.response.iter_content(chunk_size)
+
+DEFAULT_EXCLUDES = fnmatch.translate(".*")
+DEFAULT_EXCLUDES_RE = re.compile(DEFAULT_EXCLUDES).match
+
+def make_excluded(excludes=None):
+    if excludes is None:
+        return DEFAULT_EXCLUDES_RE
+    patterns = [DEFAULT_EXCLUDES]
+    patterns.extend(fnmatch.translated(x) for x in excludes)
+    return re.compile("|".join(patterns)).match
+
+def generate_paths(roots, excludes=None):
+    """
+    Walk set of paths in local filesystem, and for each file and directory generate a tuple of
+    (is directory, absolute path, path relative root used to get to that file)
+    """
+    excluded = make_excluded(excludes)
+    for root in roots:
+        base = os.path.basename(root)
+        if not excluded(base):
+            is_dir = os.path.isdir(root)
+            yield is_dir, root, base
+            if is_dir:
+                prefix_len = len(os.path.dirname(root))
+                for dirpath, dirnames, filenames in os.walk(root, topdown=True, followlinks=True):
+                    relpath = dirpath[prefix_len:].strip('/')
+                    for is_dir, names in ( (False, filenames), (True, dirnames) ):
+                        for name in names:
+                            if not excluded(name):
+                                yield is_dir, os.path.join(dirpath, name), "%s/%s" % (relpath, name)
+
