@@ -1,6 +1,4 @@
-import six
-
-from egnyte import base, const, exc
+from egnyte import base, exc
 
 class Audits(base.HasClient):
     """

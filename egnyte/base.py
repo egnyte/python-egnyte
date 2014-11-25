@@ -1,14 +1,14 @@
 from __future__ import print_function
 
 from contextlib import closing
-#import collections
+import datetime
+import fnmatch
 import hashlib
 import json
 import os
 import os.path
-import time
-import fnmatch
 import re
+import time
 
 from six import string_types
 from six.moves.urllib.parse import quote
@@ -135,6 +135,13 @@ class Resource(object):
 
     __repr__ = __str__
 
+    def __hash__(self):
+        return hash(self.path)
+
+    def __eq__(self, other):
+        if isinstance(other, Resource):
+            return (self._client is other._client and self._url == other._url)
+        return NotImplemented
 
 def get_access_token(config):
     session = Session(config)
@@ -193,7 +200,10 @@ def get_file_size(fp):
     return size
 
 def date_format(date):
-    return date.strftime("%Y-%m-%d")
+    if isinstance(date, (datetime.datetime, datetime.date)):
+        return date.strftime("%Y-%m-%d")
+    else:
+        return date
 
 
 class FileDownload(object):

@@ -25,15 +25,29 @@ class FileOrFolder(base.Resource):
 
     def link(self, accessibility, recipients=None, send_email=None, message=None,
              copy_me=None, notify=None, link_to_current=None,
-             expiry=None, add_filename=None):
-        """Create a link to this."""
-        return Links(self._client).create(path=self.path, kind=self._link_kind, accessibility=accessibility,
+             expiry_date=None, expiry_clicks=None, add_filename=None):
+        """
+        Create a link to this.
+        accessibility: Determines who a link is accessible by ('Anyone', 'Password', 'Domain', 'Recipients')
+        send_email: If true, link will be sent via email by Egnyte.
+        recipients: List email addresses of recipients of the link. Only required if send_email is True (List of valid email addresses)
+        message: Personal message to be sent in link email. Only applies if send_email is True (plain text)
+        copy_me: If True, a copy of the link message will be sent to the link creator. Only applies if send_email is True.
+        notify: If True, link creator will be notified via email when link is accessed.
+        link_to_current: If True, link will always refer to current version of file. Only applicable for file links.
+        expiry_date: The expiry date for the link. If expiry_date is specified, expiry_clicks cannot be set (future date as datetime.date or string in YYYY-MM-DD format)
+        expiry_clicks: The number of clicks the link is valid for. If expiry_clicks is specified, expiry_date cannot be set (value must be between 1 - 10, inclusive)
+        add_filename: If True then the filename will be appended to the end of the link. Only applies to file links, not folder links.
+
+        Will return sequence of created Links, one for each recipient.
+        """
+        return Links(self._client).create(path=self.path, type=self._link_kind, accessibility=accessibility,
                                           recipients=recipients, send_email=send_email, message=message,
                                           copy_me=copy_me, notify=notify, link_to_current=link_to_current,
-                                          expiry=expiry, add_filename=add_filename)
+                                          expiry_date=expiry_date, expiry_clicks=expiry_clicks, add_filename=add_filename)
 
     def _get(self):
-        """Get the appriopate object (File or Folder)"""
+        """Get the appriopiate object (File or Folder), depending on what this path points to in the Cloud File System"""
         json = exc.default.check_json_response(self._client.GET(self._url))
         if json['is_folder'] and not isinstance(self, Folder):
             instance = Folder(self._client, path=self.path)
@@ -107,8 +121,7 @@ class File(FileOrFolder):
         else:
             if len(download_range) != 2:
                 raise exc.InvalidParameters('Download range needs to be None or a 2 element integer sequence')
-            r = exc.partial.check_response(self._client.GET(url, stream=True,
-                                                            headers={'Range': 'bytes=%d-%d' % download_range}))
+            r = exc.partial.check_response(self._client.GET(url, stream=True, headers={'Range': 'bytes=%d-%d' % download_range}))
         return base.FileDownload(r, self)
 
     def _chunked_upload(self, fp, size, progress_callback):
@@ -191,7 +204,7 @@ class Folder(FileOrFolder):
             query_params[u'groups'] = '|'.join(six.text_type(x) for x in users)
         url = self._client.get_url(self._url_template_permissions, path=self.path)
         r = exc.default.check_json_response(self._client.GET(url, params=query_params))
-        return Permissions(r)
+        return PermissionSet(r)
 
     def get_effective_permissions(self, username):
         url = self._client.get_url(self._url_template_effective_permissions, username=username)
@@ -240,42 +253,35 @@ class Folders(base.HasClient):
 
 class Links(base.HasClient):
     """Collection of links"""
+    _url_template = "pubapi/v1/links"
 
-    def create(self, path, kind, accessibility,
+    def create(self, path, type, accessibility,
                recipients=None, send_email=None, message=None,
                copy_me=None, notify=None, link_to_current=None,
-               expiry=None, add_filename=None,
+               expiry_date=None, expiry_clicks=None, add_filename=None,
                ):
-        """Creare links. Will return sequence of links of created, one for each recipient"""
-        url = self._client.get_url("pubapi/v1/links")
-        if kind not in const.LINK_KIND_LIST:
-            raise exc.InvalidParameters('kind', kind)
-        if accessibility not in const.LINK_ACCESSIBILITY_LIST:
-            raise exc.InvalidParameters('accessibility', accessibility)
-        data = {
-            "path": path,
-            "type": kind,
-            "accessibility": accessibility,
-        }
-        if send_email is not None:
-            data['sendEmail'] = send_email
-        if copy_me is not None:
-            data['copyMe'] = copy_me
-        if notify is not None:
-            data['notify'] = notify
-        if add_filename is not None:
-            data['addFilename'] = add_filename
-        if kind == const.LINK_KIND_FILE and link_to_current is not None:
-            data["linkToCurrent"] = link_to_current
-        if recipients:
-            data['recipients'] = recipients
-        if expiry is not None:
-            if isinstance(expiry, int):
-                data["expiryClicks"] = expiry
-            elif type(expiry) == datetime.date:
-                data["expiryDate"] = base.date_format(expiry)
-        if message is not None:
-            data['message'] = message
+        """
+        Create links.
+        path:  The absolute path of the destination file or folder.
+        type:  This determines what type of link will be created ('File' or 'Folder')
+        accessibility: Determines who a link is accessible by ('Anyone', 'Password', 'Domain', 'Recipients')
+        send_email: If true, link will be sent via email by Egnyte.
+        recipients: List email addresses of recipients of the link. Only required if send_email is True (List of valid email addresses)
+        message: Personal message to be sent in link email. Only applies if send_email is True (plain text)
+        copy_me: If True, a copy of the link message will be sent to the link creator. Only applies if send_email is True.
+        notify: If True, link creator will be notified via email when link is accessed.
+        link_to_current: If True, link will always refer to current version of file. Only applicable for file links.
+        expiry_date: The expiry date for the link. If expiry_date is specified, expiry_clicks cannot be set (future date as datetime.date or string in YYYY-MM-DD format)
+        expiry_clicks: The number of clicks the link is valid for. If expiry_clicks is specified, expiry_date cannot be set (value must be between 1 - 10, inclusive)
+        add_filename: If True then the filename will be appended to the end of the link. Only applies to file links, not folder links.
+
+        Will return sequence of created Links, one for each recipient.
+        """
+        url = self._client.get_url(self._url_template)
+        data = {k:v for (k, v) in dict(path=path, type=type, accessibility=accessibility, send_email=send_email,
+                    copy_me=copy_me, notify=notify, add_filename=add_filename, link_to_current=link_to_current,
+                    expiry_clicks=expiry_clicks, expiry_date=base.date_format(expiry_date),
+                    recipients=recipients, message=message).items() if v is not None}
         response = exc.default.check_json_response(self._client.POST(url, data))
         # This response has weird structure
         links = response.pop('links')
@@ -287,6 +293,28 @@ class Links(base.HasClient):
 
     def get(self, id):
         return Link(self._client, id=id)
+
+    def list(self, path=None, username=None, created_before=None, created_after=None, type=None, accessibility=None,
+             offset=None, count=None):
+        """
+        Search links that match following optional conditions:
+        path: List links to this file or folder (Full absolute path of destination file or folder)
+        username: List links created by this user (Any username from your Egnyte account)
+        created_before: List links created before this date (datetime.date, or string in YYYY-MM-DD format)
+        created_after: List links created after this date (datetime.date, or string in YYYY-MM-DD format)
+        type: Links of selected type will be shown ('File' or 'Folder')
+        accessibility: Links of selected accessibility will be shown ('Anyone', 'Password', 'Domain', or 'Recipients')
+        offset: Start at this link, where offset=0 means start with first link.
+        count: Send this number of links. If not specified, all links will be sent.
+
+        Returns sequence of Link objects.
+        """
+        url = self._client.get_url(self._url_template)
+        params = {k:v for (k,v) in dict(path=path, username=username, created_before=base.date_format(created_before),
+                    created_after=base.date_format(created_after), type=type, accessibility=accessibility,
+                    offset=offset, count=count).items() if v is not None}
+        r = exc.default.check_json_response(self._client.GET(url, params=params))
+        return [self.get(id) for id in r['ids']]
 
 
 class Users(base.HasClient):
@@ -307,7 +335,7 @@ class Users(base.HasClient):
     # def create_user(self, **kwargs):
     #    return .User(self, **kwargs)
 
-class Permissions(object):
+class PermissionSet(object):
     """Wrapper for a permission set"""
     def __init__(self, json):
         self._users = json.get('users', ())

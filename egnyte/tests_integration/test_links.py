@@ -1,5 +1,8 @@
-from egnyte import const, exc
+from __future__ import print_function
 
+import datetime
+
+from egnyte import const, exc
 from egnyte.tests_integration.config import TestCase
 
 
@@ -18,3 +21,15 @@ class TestLinks(TestCase):
         link_two.check()  # link two should still exist
         self.assertRaises(exc.NotFound, link_one.check)  # link one should no longer exist
         link_two.delete()
+
+    def test_links(self):
+        links = self.client.links
+        all = links.list()
+        tomorrow = datetime.datetime.now() + datetime.timedelta(1)
+        future = links.list(created_after=tomorrow)
+        self.assertEqual([], future, "List of links created after tomorrow should be empty")
+        past = links.list(created_before=tomorrow)
+        self.assertEqual(tuple(all), tuple(past), "List of links created before tomorrow should include all links")
+        
+
+
