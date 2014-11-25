@@ -17,6 +17,9 @@ class EgnyteClient(base.Session):
 
     @property
     def user_info(self):
+        """
+        Information about user that this API access token belongs to.
+        """
         return exc.default.check_json_response(self.GET(self.get_url("pubapi/v1/userinfo")))
 
     @property
@@ -39,6 +42,20 @@ class EgnyteClient(base.Session):
     def get(self, path):
         """Check whether a path is a file or a folder and return appropiate object."""
         return self.folder(path)._get()
+
+    def impersonate(self, username):
+        """
+        Start impersonating another user.
+        username: either username or full email address of user to impersonate.
+        """
+        self._session.headers['X-Egnyte-Act-As-Email' if '@' in username else 'X-Egnyte-Act-As'] = username
+
+    def stop_impersonating(self):
+        """
+        Stop impersonating another user.
+        """
+        self._session.headers.pop('X-Egnyte-Act-As', None)
+        self._session.headers.pop('X-Egnyte-Act-As-Email', None)
 
     def bulk_upload(self, paths, target, exclude=None, progress_callbacks=None):
         """

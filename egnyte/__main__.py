@@ -11,32 +11,36 @@ from contextlib import closing
 
 from egnyte import client, configuration, exc, base
 
-def create_parser():
-    main = argparse.ArgumentParser(prog="python -m egnyte")
+
+parser_kwargs = dict(formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=50))
+
+def create_main_parser():
+    main = argparse.ArgumentParser(prog="python -m egnyte", **parser_kwargs)
     main.add_argument("-c", "--config-path", help="Path to config file")
     main.add_argument('-v', '--verbose', action='count', dest='verbosity', help="Be more verbose. Can be repeated for debugging", default=0)
+    main.add_argument('--impersonate', metavar="USERNAME", help="Impersonate another user (username or email)", default=None)
 
     subparsers = main.add_subparsers()
 
-    parser_config = subparsers.add_parser('config', help='commands related to configuration')
+    parser_config = subparsers.add_parser('config', help='commands related to configuration', **parser_kwargs)
     subparsers_config = parser_config.add_subparsers()
 
-    parser_config_show = subparsers_config.add_parser('show', help="show configuration")
+    parser_config_show = subparsers_config.add_parser('show', help="show configuration", **parser_kwargs)
     parser_config_show.set_defaults(command="config_show")
 
-    parser_config_create = subparsers_config.add_parser('create', help='create a new configuration file')
+    parser_config_create = subparsers_config.add_parser('create', help='create a new configuration file', **parser_kwargs)
     parser_config_create.set_defaults(command="config_create")
 
-    parser_config_update = subparsers_config.add_parser('update', help='update a configuration file')
+    parser_config_update = subparsers_config.add_parser('update', help='update a configuration file', **parser_kwargs)
     parser_config_update.set_defaults(command="config_update")
 
-    parser_config_token = subparsers_config.add_parser('token', help='generate a new access token and store it in config file')
+    parser_config_token = subparsers_config.add_parser('token', help='generate a new access token and store it in config file', **parser_kwargs)
     parser_config_token.set_defaults(command="config_token")
 
-    parser_token = subparsers.add_parser('token', help='generate a new access token and print it')
+    parser_token = subparsers.add_parser('token', help='generate a new access token and print it', **parser_kwargs)
     parser_token.set_defaults(command='token')
 
-    parser_test = subparsers.add_parser('test', help='test if config is correct (connects to service)')
+    parser_test = subparsers.add_parser('test', help='test if config is correct (connects to service)', **parser_kwargs)
     parser_test.set_defaults(command='test')
 
     for parser, required in [ (parser_config_create, True), (parser_config_update, False), (parser_token, False) ]:
@@ -50,19 +54,19 @@ def create_parser():
 
     # Audit generator
 
-    parser_audit = subparsers.add_parser('audit', help='generate audit reports')
+    parser_audit = subparsers.add_parser('audit', help='generate audit reports', **parser_kwargs)
     subparsers_audit = parser_audit.add_subparsers()
 
-    parser_audit_files = subparsers_audit.add_parser('files', help="create Files report")
+    parser_audit_files = subparsers_audit.add_parser('files', help="create Files report", **parser_kwargs)
     parser_audit_files.set_defaults(command="audit_files")
 
-    parser_audit_logins = subparsers_audit.add_parser('logins', help="create Logins report")
+    parser_audit_logins = subparsers_audit.add_parser('logins', help="create Logins report", **parser_kwargs)
     parser_audit_logins.set_defaults(command="audit_logins")
 
-    parser_audit_permissions = subparsers_audit.add_parser('permissions', help="create Permissions report")
+    parser_audit_permissions = subparsers_audit.add_parser('permissions', help="create Permissions report", **parser_kwargs)
     parser_audit_permissions.set_defaults(command="audit_permissions")
 
-    parser_audit_get = subparsers_audit.add_parser('get', help="get a previously generated report")
+    parser_audit_get = subparsers_audit.add_parser('get', help="get a previously generated report", **parser_kwargs)
     parser_audit_get.set_defaults(command="audit_get")
 
     # Common options
@@ -92,22 +96,19 @@ def create_parser():
 
     parser_audit_get.add_argument('--id', required=True, help="Id of the report")
 
-    parser_upload = subparsers.add_parser('upload', help='send files to Egnyte')
+    parser_upload = subparsers.add_parser('upload', help='send files to Egnyte', **parser_kwargs)
     parser_upload.set_defaults(command="upload")
 
     parser_upload.add_argument('paths', nargs='+', help="Paths (files to directories) to upload")
     parser_upload.add_argument('target', help="Path in Cloud File System to upload to")
+    parser_upload.add_argument('-x', '--exclude', action='append', default=None, help='Exclude items that match this glob pattern')
 
-    parser_download = subparsers.add_parser('download', help='download files from Egnyte')
+    parser_download = subparsers.add_parser('download', help='download files from Egnyte', **parser_kwargs)
     parser_download.set_defaults(command="download")
 
     parser_download.add_argument('paths', nargs='+', help="Paths (files to directories) to download")
     parser_download.add_argument('--target', help="Local directory to put downloaded files and directories in", default='.')
     parser_download.add_argument('--overwrite', action='store_const', const=True, default=False, help="Delete local files and directories that conflict with cloud content")
-
-    for parser in (parser_upload, parser_download):
-        parser.add_argument('-x', '--exclude', action='append', default=None, help='Exclude items that match this glob pattern')
-
 
     return main
 
@@ -162,6 +163,12 @@ class Commands(object):
             print(repr(e))
             return self.STATUS_API_ERROR
 
+    def get_client(self):
+        result = client.EgnyteClient(self.config)
+        if self.args.impersonate is not None:
+            result.impersonate(self.args.impersonate)
+        return result
+
     def get_access_token(self):
         config = self.require_password()
         return base.get_access_token(config).get_access_token()
@@ -202,7 +209,7 @@ class Commands(object):
         print(self.get_access_token())
 
     def cmd_test(self):
-        api = client.EgnyteClient(self.config)
+        api = self.get_client()
         info = api.user_info()
         print("Connection successful for user %s" % (info['username'],))
 
@@ -242,12 +249,14 @@ class Commands(object):
             return value.split(',')
 
     def cmd_audit_get(self):
-        audits = client.EgnyteClient(self.config).audits
+        api = self.get_client()
+        audits = api.audits
         report = audits.get(id = self.args.id)
         return self.wait_and_save_report(report)
 
     def cmd_audit_files(self):
-        audits = client.EgnyteClient(self.config).audits
+        api = self.get_client()
+        audits = api.audits
         folders = getattr(self.args, 'folder', None)
         file = self.args.file
         users = self.comma_split('users')
@@ -256,7 +265,8 @@ class Commands(object):
         return self.wait_and_save_report(report)
 
     def cmd_audit_permissions(self):
-        audits = client.EgnyteClient(self.config).audits
+        api = self.get_client()
+        audits = api.audits
         assigners = self.comma_split('assigner')
         folders = self.args.folder
         users = self.comma_split('users')
@@ -265,7 +275,8 @@ class Commands(object):
         return self.wait_and_save_report(report)
 
     def cmd_audit_logins(self):
-        audits = client.EgnyteClient(self.config).audits
+        api = self.get_client()
+        audits = api.audits
         users = self.comma_split('users')
         events = self.comma_split('events')
         access_points = self.comma_split('access_points')
@@ -283,11 +294,11 @@ class Commands(object):
                 return VerboseCallbacks()
 
     def cmd_upload(self):
-        api = client.EgnyteClient(self.config)
+        api = self.get_client()
         api.bulk_upload(self.args.paths, self.args.target, self.args.exclude, self.transfer_callbacks())
 
     def cmd_download(self):
-        api = client.EgnyteClient(self.config)
+        api = self.get_client()
         api.bulk_download(self.args.paths, self.args.target, self.args.overwrite, self.transfer_callbacks())
 
 class VerboseCallbacks(client.ProgressCallbacks):
@@ -354,7 +365,7 @@ class TerminalCallbacks(VerboseCallbacks):
 
 
 def main():
-    parsed = create_parser().parse_args()
+    parsed = create_main_parser().parse_args()
     sys.exit(Commands(parsed).run())
 
 if __name__ == '__main__':
