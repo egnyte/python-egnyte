@@ -202,17 +202,33 @@ class FileDownload(object):
     Delegates reads to underlying requests response.
     """
 
-    def __init__(self, response):
+    def __init__(self, response, file):
         self.response = response
+        self.file = file
 
     def __len__(self):
         return int(self.response.headers['content-length'])
 
-    def write_to(self, fp):
-        """Copy data to a file, then close the source."""
+    def write_to(self, fp, progress_callback=None):
+        """
+        Copy data to a file, then close the source.
+        Optional progress_callback should have the signature of ProgressCallbacks.download_progress
+        """
+        downloaded = 0
         with closing(self):
             for chunk in self.iter_content():
                 fp.write(chunk)
+                if progress_callback is not None:
+                    downloaded += len(chunk)
+                    progress_callback(self.file, self.file.size, downloaded)
+
+    def save_to(self, path, progress_callback=None):
+        """
+        Create a new file and save the contents
+        Optional progress_callback should have the signature of ProgressCallbacks.download_progress
+        """
+        with open(path, "wb") as fp:
+            self.write_to(fp, progress_callback)
 
     def close(self):
         self.response.close()

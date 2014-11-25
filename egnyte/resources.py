@@ -32,6 +32,23 @@ class FileOrFolder(base.Resource):
                                           copy_me=copy_me, notify=notify, link_to_current=link_to_current,
                                           expiry=expiry, add_filename=add_filename)
 
+    def _get(self):
+        """Get the appriopate object (File or Folder)"""
+        json = exc.default.check_json_response(self._client.GET(self._url))
+        if json['is_folder'] and not isinstance(self, Folder):
+            instance = Folder(self._client, path=self.path)
+        elif not json['is_folder'] and not instance(self, File):
+            instance = File(self._client, path=self.path)
+        else:
+            instance = self
+        instance._update_attributes(json)
+        if instance.is_folder:
+            instance.folders = [Folder(self._client, **folder_data) for folder_data in json.get('folders', ())]
+            instance.files = [File(self._client, **file_data) for file_data in json.get('files', ())]
+        return instance
+
+        
+
 
 class File(FileOrFolder):
     """
@@ -92,7 +109,7 @@ class File(FileOrFolder):
                 raise exc.InvalidParameters('Download range needs to be None or a 2 element integer sequence')
             r = exc.partial.check_response(self._client.GET(url, stream=True,
                                                             headers={'Range': 'bytes=%d-%d' % download_range}))
-        return base.FileDownload(r)
+        return base.FileDownload(r, self)
 
     def _chunked_upload(self, fp, size, progress_callback):
         url = self._client.get_url(self._url_template_content_chunked, path=self.path)
@@ -159,15 +176,9 @@ class Folder(FileOrFolder):
 
     def list(self):
         """
-        List contents of this folder.
-        Returns dictionary with two keys, folders and files.
-        Both are generators to list of Folder and Files contained here.
+        Gets contents of this folder (in instance attributes 'folders' and 'files')
         """
-        json = exc.default.check_json_response(self._client.GET(self._url))
-        self._update_attributes(json)
-        self.folders = [Folder(self._client, **folder_data) for folder_data in json.get('folders', ())]
-        self.files = [File(self._client, **file_data) for file_data in json.get('files', ())]
-        return self
+        return self._get()
 
     def get_permissions(self, users=None, groups=None):
         """

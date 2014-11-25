@@ -1,6 +1,9 @@
 from __future__ import print_function
 
+import collections
+import os
 import os.path
+import shutil
 
 from egnyte import exc, base, resources, audits
 
@@ -35,12 +38,7 @@ class EgnyteClient(base.Session):
 
     def get(self, path):
         """Check whether a path is a file or a folder and return appropiate object."""
-        folder = self.folder(self, path=path).list()
-        if folder.is_folder:
-            return folder
-        else:
-            # a file after all
-            return self.file(path=path, is_folder=False, name=folder.name)
+        return self.folder(path)._get()
 
     def bulk_upload(self, paths, target, exclude=None, progress_callbacks=None):
         """
@@ -70,7 +68,49 @@ class EgnyteClient(base.Session):
                     progress_callbacks.upload_finish(cloud_file)
         progress_callbacks.finished()
 
-    def bulk_download(self, paths, local_dir, progress_callbacks=None):
+    def _bulk_download(self, items, root_path, local_dir, overwrite, progress_callbacks):
+        root_len = len(root_path.rstrip('/')) + 1
+        queue = collections.deque(items)
+        while True:
+            try:
+                obj = queue.popleft()
+            except IndexError:
+                break
+            relpath = obj.path[root_len:].strip('/')
+            local_path = os.path.join(local_dir, relpath.replace('/', os.sep))
+            dir_path = os.path.dirname(local_path)
+            if not os.path.isdir(dir_path):
+                if os.path.exists(dir_path):
+                    if overwrite:
+                        os.unlink(local_path)
+                    else:
+                        progress_callbacks.skipped(obj, "Existing file conflicts with cloud folder")
+                        continue
+                os.makedirs(dir_path)
+            if obj.is_folder:
+                # schedule contents for later, files first
+                if obj.files is None:
+                    progress_callbacks.getting_info(obj.path)
+                    obj.list()
+                    progress_callbacks.got_info(obj)
+                queue.extend(obj.files)
+                queue.extend(obj.folders)
+            else:
+                if os.path.exists(local_path):
+                    if overwrite:
+                        if os.path.isdir(local_path) and not os.path.islink(local_path):
+                            shutil.rmtree(local_path)
+                        else:
+                            os.unlink(local_path)
+                    else:
+                        progress_callbacks.skipped(obj, "Existing file conflicts with cloud file")
+                        continue
+                progress_callbacks.download_start(local_path, obj, obj.size)
+                obj.download().save_to(local_path, progress_callbacks.download_progress)
+                progress_callbacks.download_finish(obj)
+        
+
+    def bulk_download(self, paths, local_dir, overwrite=False, progress_callbacks=None):
         """
         Transfer many files or directories to Cloud File System.
         paths - list of local file paths
@@ -82,27 +122,15 @@ class EgnyteClient(base.Session):
         for path in paths:
             progress_callbacks.getting_info(path)
             obj = self.get(path)
-            progress_callbacks.got_info(path, obj)
+            progress_callbacks.got_info(obj)
+            root_path = path[:path.rstrip('/').rfind('/')] # take all segments expect last one
             if obj.is_folder:
-                pass
+                items = obj.files + obj.folders
+            else:
+                items = (obj,)
+            self._bulk_download(items, root_path, local_dir, overwrite, progress_callbacks)
+        progress_callbacks.finished()
 
-        #while True:
-        #    try:
-        #        path = queue.popleft()
-        #    except IndexError:
-        #        # finished
-        #        return
-        #    if isinstance(path, base.HasClient):
-        #        obj = path
-        #    else:
-        #        progress_callbacks.getting_info(path)
-        #        obj = self.get(path)
-        #        progress_callbacks.got_info(path, obj)
-        #    if obj.is_folder:
-        #        # schedule contents for later
-        #        queue.extend(obj.files)
-        #        queue.extend(obj.folders)
-        #    else:
 
 
 class ProgressCallbacks(object):
@@ -139,6 +167,9 @@ class ProgressCallbacks(object):
 
     def finished(self):
         """Called after all operations."""
+
+    def skipped(self, cloud_obj, reason):
+        """Object has been skipped because of 'reason'"""
 
 
         

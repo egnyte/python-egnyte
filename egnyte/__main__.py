@@ -102,7 +102,8 @@ def create_parser():
     parser_download.set_defaults(command="download")
 
     parser_download.add_argument('paths', nargs='+', help="Paths (files to directories) to download")
-    parser_download.add_argument('--target', help="Local directory to put downloaded files and directories in", default=None)
+    parser_download.add_argument('--target', help="Local directory to put downloaded files and directories in", default='.')
+    parser_download.add_argument('--overwrite', action='store_const', const=True, default=False, help="Delete local files and directories that conflict with cloud content")
 
     for parser in (parser_upload, parser_download):
         parser.add_argument('-x', '--exclude', action='append', default=None, help='Exclude items that match this glob pattern')
@@ -274,7 +275,10 @@ class Commands(object):
     def transfer_callbacks(self):
         if self.info:
             if sys.stdout.isatty():
-                return TerminalCallbacks()
+                result = TerminalCallbacks()
+                if self.debug:
+                    result.force_newline = True
+                return result
             else:
                 return VerboseCallbacks()
 
@@ -284,13 +288,11 @@ class Commands(object):
 
     def cmd_download(self):
         api = client.EgnyteClient(self.config)
-        print()
-        
-
+        api.bulk_download(self.args.paths, self.args.target, self.args.overwrite, self.transfer_callbacks())
 
 class VerboseCallbacks(client.ProgressCallbacks):
     """Progress callbacks used when sys.stdout is a file or a pipe"""
-    def write(self, text):
+    def write(self, text, force_newline=False):
         print(text)
 
     def getting_info(self, cloud_path):
@@ -310,19 +312,30 @@ class VerboseCallbacks(client.ProgressCallbacks):
     def creating_directory(self, cloud_folder):
         self.write("Creating directory %s" % cloud_folder.path)
 
+    def skipped(self, cloud_obj, reason):
+        self.write("Skipped %s: %s" % (cloud_obj.path, reason), force_newline=True)
+
+    def finished(self):
+        self.write("Finished", force_newline=True)
+
 
 class TerminalCallbacks(VerboseCallbacks):
     """Progress callbacks used when sys.stdout is a terminal"""
+    force_newline = False
     def __init__(self):
         self.last_len = 0
 
-    def write(self, text):
+    def write(self, text, force_newline=None):
+        if force_newline is None:
+            force_newline = self.force_newline
         output = ["\r"]
         sys.stdout.write("\r") # return the carret
         if len(text) < self.last_len: # clear out previous text
             sys.stdout.write(' ' * self.last_len)
             sys.stdout.write("\r") # return the carret
         output.append(text)
+        if force_newline:
+            output.append('\n')
         sys.stdout.write("".join(output))
         sys.stdout.flush()
         self.last_len = len(text)
@@ -333,8 +346,12 @@ class TerminalCallbacks(VerboseCallbacks):
     def upload_progress(self, cloud_file, size, uploaded):
         self.write("Uploading %s, %d%%" % (self.current, (uploaded*100)/size))
 
-    def finished(self):
-        self.write("Finished\n")
+    def download_finish(self, cloud_file):
+        self.write("Downloaded %s" % self.current)
+
+    def upload_finish(self, cloud_file):
+        self.write("Uploaded %s" % self.current)
+
 
 def main():
     parsed = create_parser().parse_args()
