@@ -26,9 +26,11 @@ class TestLinks(TestCase):
         all = links.list()
         tomorrow = datetime.datetime.now() + datetime.timedelta(1)
         future = links.list(created_after=tomorrow)
-        self.assertEqual([], future, "List of links created after tomorrow should be empty")
+        self.assertEqual([], future['links'], "List of links created after tomorrow should be empty")
+        self.assertEqual(0, future['count'], "Count of links created after tomorrow should be 0")
+        self.assertEqual(0, future['total_count'], "Total count of links created after tomorrow should be 0")
         past = links.list(created_before=tomorrow)
-        self.assertEqual(tuple(all), tuple(past), "List of links created before tomorrow should include all links")
+        self.assertEqual(tuple(all['links']), tuple(past['links']), "List of links created before tomorrow should include all links")
         
 
 

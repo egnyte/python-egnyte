@@ -338,8 +338,9 @@ class Links(base.HasClient):
         params = base.filter_none_values(dict(path=path, username=username, created_before=base.date_format(created_before),
                 created_after=base.date_format(created_after), type=type, accessibility=accessibility,
                 offset=offset, count=count))
-        r = exc.default.check_json_response(self._client.GET(url, params=params))
-        return [self.get(id) for id in r['ids']]
+        json = exc.default.check_json_response(self._client.GET(url, params=params))
+        json['links'] = [self.get(id) for id in json.pop('ids', ())]
+        return json
 
 
 class Users(base.HasClient):
