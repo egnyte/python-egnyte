@@ -2,15 +2,14 @@ from __future__ import print_function
 
 import datetime
 
-from egnyte import const, exc
+from egnyte import exc
 from egnyte.tests_integration.config import TestCase
 
 
 class TestLinks(TestCase):
     def test_folder_link_duplicates(self):
         folder = self.root_folder.folder("link_duplicates").create()
-        links = folder.link(const.LINK_ACCESSIBILITY_ANYONE, recipients=['test1@example.com', 'test2@example.com'],
-                            send_email=False)
+        links = folder.link("anyone", recipients=['test1@example.com', 'test2@example.com'], send_email=False)
         link_one = links[0]
         link_two = links[1]
         self.assertEqual(link_one.path, link_two.path, "Both links should point to the same file")

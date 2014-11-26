@@ -1,9 +1,8 @@
 import collections
-import datetime
 
 import six
 
-from egnyte import base, const, exc
+from egnyte import base, exc
 
 
 class FileOrFolder(base.Resource):
@@ -17,11 +16,11 @@ class FileOrFolder(base.Resource):
 
     def copy(self, destination):
         """Copy this to another path. Destination path should have all segments (including last one)."""
-        return self._action(const.ACTION_COPY, destination)
+        return self._action('copy', destination)
 
     def move(self, destination):
         """Move this to another path. Destination path should have all segments (including last one)."""
-        return self._action(const.ACTION_MOVE, destination)
+        return self._action('move', destination)
 
     def link(self, accessibility, recipients=None, send_email=None, message=None,
              copy_me=None, notify=None, link_to_current=None,
@@ -47,7 +46,7 @@ class FileOrFolder(base.Resource):
                                           expiry_date=expiry_date, expiry_clicks=expiry_clicks, add_filename=add_filename)
 
     def _get(self):
-        """Get the appriopiate object (File or Folder), depending on what this path points to in the Cloud File System"""
+        """Get the appropiate object type (File or Folder), depending on what this path points to in the Cloud File System"""
         json = exc.default.check_json_response(self._client.GET(self._url))
         if json['is_folder'] and not isinstance(self, Folder):
             instance = Folder(self._client, path=self.path)
@@ -72,7 +71,7 @@ class File(FileOrFolder):
     """
     _upload_chunk_size = 100 * (1024 * 1024)  # 100 MB
     _upload_retries = 3
-    _link_kind = const.LINK_KIND_FILE
+    _link_kind = 'file'
     _lazy_attributes = {'num_versions', 'name', 'checksum', 'last_modified', 'entry_id',
                         'uploaded_by', 'size', 'is_folder'}
     _url_template_content = "pubapi/v1/fs-content%(path)s"
@@ -161,7 +160,7 @@ class Folder(FileOrFolder):
     _url_template_permissions = "pubapi/v1/perms/folder/%(path)s"
     _url_template_effective_permissions = "pubabi/v1/perms/user/%(username)s"
     _lazy_attributes = {'name', 'folder_id', 'is_folder'}
-    _link_kind = const.LINK_KIND_FOLDER
+    _link_kind = 'folder'
     folders = None
     files = None
 
@@ -178,7 +177,7 @@ class Folder(FileOrFolder):
         Create a new folder in the Egnyte cloud.
         If ignore_if_exists is True, error raised if folder already exists will be ignored.
         """
-        r = self._client.POST(self._url, dict(action=const.ACTION_ADD_FOLDER))
+        r = self._client.POST(self._url, dict(action='add_folder'))
         (exc.created_ignore_existing if ignore_if_exists else exc.created).check_response(r)
         return self
 
