@@ -1,12 +1,18 @@
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
+
 from egnyte import exc
 
 from egnyte.tests_integration.config import TestCase
 
 
+
+
 class TestFolders(TestCase):
     def setUp(self):
         super(TestFolders, self).setUp()
-        self.folder = self.root_folder.folder('1')
+        self.folder = self.root_folder.folder('Iñtërnâtiônàlizætiøν☃ test')
         self.dest = self.root_folder.folder('2')
         self.file = self.folder.file('test.txt')
 

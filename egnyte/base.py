@@ -1,4 +1,4 @@
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 
 from contextlib import closing
 import datetime
@@ -10,7 +10,7 @@ import os.path
 import re
 import time
 
-from six import string_types
+from six import string_types, text_type
 from six.moves.urllib.parse import quote
 
 import requests
@@ -42,7 +42,9 @@ class Session(object):
             self.time_between_requests = 1.0 / float(self.config['requests_per_second'])
 
     def _encode_path(self, path):
-        return quote(path, '/')
+        if isinstance(path, text_type):
+            path = path.encode('utf-8')
+        return quote(path, b'/')
 
     def _respect_limits(self):
         if self.time_between_requests:
@@ -67,6 +69,18 @@ class Session(object):
         if 'headers' in kwargs:
             headers.update(kwargs.pop('headers'))
         return self._session.post(url, data=data, headers=headers, **kwargs)
+
+    def PATCH(self, url, json_data=None, **kwargs):
+        self._respect_limits()
+        if json_data is None:
+            headers = {}
+            data = kwargs.pop('data', None)
+        else:
+            headers = JSON_HEADERS
+            data = json.dumps(json_data)
+        if 'headers' in kwargs:
+            headers.update(kwargs.pop('headers'))
+        return self._session.patch(url, data=data, headers=headers, **kwargs)
 
     def DELETE(self, url, **kwargs):
         self._respect_limits()
@@ -142,6 +156,10 @@ class Resource(object):
         if isinstance(other, Resource):
             return (self._client is other._client and self._url == other._url)
         return NotImplemented
+
+    def delete(self):
+        exc.default.check_response(self._client.DELETE(self._url))
+
 
 def get_access_token(config):
     session = Session(config)
@@ -294,3 +312,6 @@ def generate_paths(roots, excludes=None):
                             if not excluded(name):
                                 yield is_dir, os.path.join(dirpath, name), "%s/%s" % (relpath, name)
 
+def filter_none_values(dict):
+    """Return dictionary with values that are None filtered out"""
+    return {k: v for (k,v) in dict.items() if v is not None}

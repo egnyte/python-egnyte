@@ -15,6 +15,16 @@ from six.moves import http_client
 class EgnyteError(Exception):
     """Base class for Egnyte SDK exceptions"""
 
+    def __str__(self):
+        """Pretty-printed version. Use repr for bare vesion instead"""
+        contents = []
+        for item in self:
+            if isinstance(item, dict):
+                contents.append("{%s}" % ", ".join(sorted(["%s: '%s'" % (k, v) for (k, v) in item.items()])))
+            else:
+                contents.append(str(item))
+        return "<%s: %s>" % (self.__class__.__name__, ", ".join(contents))
+
 
 class InvalidParameters(EgnyteError):
     """Invalid parameters were passed to an API request"""
@@ -27,8 +37,10 @@ class InsufficientPermissions(EgnyteError):
 class NotFound(EgnyteError):
     """Resource with name does not exist"""
 
+
 class Redirected(EgnyteError):
     """Received unexpected HTTP 303 respone"""
+
 
 class NotAuthorized(EgnyteError):
     """Access token is required"""

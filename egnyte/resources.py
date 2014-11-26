@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import collections
 
 import six
@@ -59,8 +61,6 @@ class FileOrFolder(base.Resource):
             instance.folders = [Folder(self._client, **folder_data) for folder_data in json.get('folders', ())]
             instance.files = [File(self._client, **file_data) for file_data in json.get('files', ())]
         return instance
-
-        
 
 
 class File(FileOrFolder):
@@ -151,6 +151,11 @@ class File(FileOrFolder):
             if progress_callback is not None:
                 progress_callback(self, size, chunk_number * self._upload_chunk_size)
 
+    def delete(self):
+        """Delete this file."""
+        base.Resource.delete(self)
+
+
 class Folder(FileOrFolder):
     """
     Wrapper for a folder the cloud.
@@ -183,8 +188,7 @@ class Folder(FileOrFolder):
 
     def delete(self):
         """Delete this folder in the cloud."""
-        r = self._client.DELETE(self._url)
-        exc.default.check_response(r)
+        base.Resource.delete(self)
 
     def list(self):
         """
@@ -218,32 +222,54 @@ class Link(base.Resource):
                         'path', 'creation_date', 'type', 'send_mail'}
 
     def delete(self):
-        exc.default.check_response(self._client.DELETE(self._url))
+        """Delete this link"""
+        base.Resource.delete(self)
 
 
 class User(base.Resource):
-    _url_template_effective_permissions = "pubabi/v1/perms/user/%(username)s"
-
-    def apply_changes(self):
-        pass
-
-    def create(self):
-        pass
+    """
+    Wrapper for a User.
+    Warning: attribute names in this class use camelCase instead of underscores.
+    Name is dictionary with 2 keys: givenName and lastName.
+    """
+    _url_template = "pubapi/v2/users/%(id)s"
+    _url_template_effective_permissions = "pubabi/v1/perms/user/%(userName)s"
+    _lazy_attributes = {'userName', 'externalId', 'email', 'name', 'active', 'locked', 'authType',
+                        'role', 'userType', 'idpUserId'}
 
     def delete(self):
-        pass
+        """Delete this user account."""
+        base.Resource.delete(self)
+
+    def update(self, email=None, familyName=None, givenName=None, active=None, sendInvite=None, authType=None,
+               userType=None, idpUserId=None, userPrincipalName=None):
+        """
+        Modify this user account.
+        Optional parameters (no change if value is None):
+        email: The email address of the user. Any valid email address (e.g. admin@acme.com)
+        familyName: The last name of the user. Any plain text (e.g. John)
+        givenName: The first name of the user. Any plain text (e.g. Smith)
+        active: Whether the user is active or inactive. True or False
+        sendInvite: If set to true when creating a user, an invitation email will be sent (if the user is created in active state). True or False
+        authType: The authentication type for the user. 'ad' (AD), 'sso' (SAML SSO), 'egnyte' (Internal Egnyte)
+        userType: The Egnyte role of the user. 'admin' (Administrator), 'power' (Power User), 'standard' (Standard User)
+        idpUserId: Only required if the user is SSO authenticated and not using default user mapping. Do not specify if user is not SSO authenticated. This is the way the user is identified within the SAML Response from an SSO Identity Provider, i.e. the SAML Subject (e.g. jsmith)
+        userPrincipalName: Do not specify if user is not AD authenticated. Used to bind child authentication policies to a user when using Active Directory authentication in a multi-domain setup (e.g. jmiller@example.com)
+        """
+        url = self._client.get_url(self._url_template, id=self.id)
+        name = base.filter_none_values(dict(familyName=familyName, givenName=givenName)) or None
+        data = base.filter_none_values(dict(email=email, active=active, name=name, sendInvite=sendInvite, authType=authType, idpUserId=idpUserId, userPrincipalName=userPrincipalName))
+        json = exc.default.check_json_response(self._client.PATCH(url, data))
+        self._update_attributes(json)
 
     def get_effective_permissions(self, path):
-        url = self._client.get_url(self._url_template_effective_permissions, username=self.username)
+        url = self._client.get_url(self._url_template_effective_permissions, userName=self.userName)
         r = exc.default.check_json_response(self._client.GET(url, params=dict(folder=path)))
         return r
 
 
-
 class Files(base.HasClient):
-    """
-    Collection of files.
-    """
+    """Collection of files."""
 
 
 class Folders(base.HasClient):
@@ -277,10 +303,10 @@ class Links(base.HasClient):
         Will return sequence of created Links, one for each recipient.
         """
         url = self._client.get_url(self._url_template)
-        data = {k:v for (k, v) in dict(path=path, type=type, accessibility=accessibility, send_email=send_email,
-                    copy_me=copy_me, notify=notify, add_filename=add_filename, link_to_current=link_to_current,
-                    expiry_clicks=expiry_clicks, expiry_date=base.date_format(expiry_date),
-                    recipients=recipients, message=message).items() if v is not None}
+        data = base.filter_none_values(dict(path=path, type=type, accessibility=accessibility, send_email=send_email,
+            copy_me=copy_me, notify=notify, add_filename=add_filename, link_to_current=link_to_current,
+            expiry_clicks=expiry_clicks, expiry_date=base.date_format(expiry_date),
+            recipients=recipients, message=message))
         response = exc.default.check_json_response(self._client.POST(url, data))
         # This response has weird structure
         links = response.pop('links')
@@ -309,33 +335,86 @@ class Links(base.HasClient):
         Returns sequence of Link objects.
         """
         url = self._client.get_url(self._url_template)
-        params = {k:v for (k,v) in dict(path=path, username=username, created_before=base.date_format(created_before),
-                    created_after=base.date_format(created_after), type=type, accessibility=accessibility,
-                    offset=offset, count=count).items() if v is not None}
+        params = base.filter_none_values(dict(path=path, username=username, created_before=base.date_format(created_before),
+                created_after=base.date_format(created_after), type=type, accessibility=accessibility,
+                offset=offset, count=count))
         r = exc.default.check_json_response(self._client.GET(url, params=params))
         return [self.get(id) for id in r['ids']]
 
 
 class Users(base.HasClient):
     """Collection of users"""
+    _url_template = "pubapi/v2/users"
 
-    def users_where(self, where):
-        return Users(self._client, where=where)
+    def list(self, email=None, externalId=None, userName=None, startIndex=None, count=None):
+        """
+        Search users. Optional search parameters are 'email', 'externalId' and 'userName'.
+        startIndex (starts with 1) and count may be used for pagination
 
-    def users_search(self, search_string):
-        return Users(self._client, search_string=search_string)
+        Returns a dictionary with following keys:
+        totalResults: total number of results
+        itemsPerPage: how many users in this batch: 2
+        startIndex: index of first user in this batch
+        users: list of User objects
+        """
+        url = self._client.get_url(self._url_template)
+        filters = base.filter_none_values(dict(email=email, externalId=externalId, userName=userName))
+        params = base.filter_none_values(dict(startIndex=startIndex, count=count))
+        params['filter'] = [u'%s eq "%s"' % (k, v) for (k, v) in filters.items()]
+        json = exc.default.check_json_response(self._client.GET(url, params=params))
+        users = json.pop('resources', ())
+        json['users'] = [User(self._client, **d) for d in users]
+        return json
 
-    def user_by_id(self, id):
+    def get(self, id):
+        """Get a User object by id. Does not check if User exists."""
         return User(self._client, id=id)
 
-    def user_by_email(self, email):
-        return User(self._client, email=email)
+    def by_email(self, email):
+        """Get a User object by email. Returns None if user does not exist"""
+        try:
+            return self.list(email=email)['users'][0]
+        except LookupError:
+            pass
 
-    # def create_user(self, **kwargs):
-    #    return .User(self, **kwargs)
+    def by_username(self, userName):
+        """Get a User object by username. Returns None if user does not exist"""
+        try:
+            return self.list(userName=userName)['users'][0]
+        except LookupError:
+            pass
+
+
+    def create(self, userName, externalId, email, familyName, givenName, active=True, sendInvite=True, authType='egnyte',
+               userType='power', role=None, idpUserId=None, userPrincipalName=None):
+        """
+        Create a new user account. Parameters:
+        userName: The Egnyte username for the user. Username must start with a letter or digit. Special characters are not supported (with the exception of periods, hyphens, and underscores).
+        externalId: This is an immutable unique identifier provided by the API consumer. Any plain text (e.g. S-1-5-21-3623811015-3361044348-30300820-1013)
+        email: The email address of the user. Any valid email address (e.g. admin@acme.com)
+        familyName: The last name of the user. Any plain text (e.g. John)
+        givenName: The first name of the user. Any plain text (e.g. Smith)
+        active: Whether the user is active or inactive. True or False
+        sendInvite: If set to true when creating a user, an invitation email will be sent (if the user is created in active state). True or False
+        authType: The authentication type for the user. 'ad' (AD), 'sso' (SAML SSO), 'egnyte' (Internal Egnyte)
+        userType: The type of the user. 'admin' (Administrator), 'power' (Power User), 'standard' (Standard User)
+        role: The role assigned to the user. Only applicable for Power Users. Default or custom role name
+        idpUserId: Only required if the user is SSO authenticated and not using default user mapping. Do not specify if user is not SSO authenticated. This is the way the user is identified within the SAML Response from an SSO Identity Provider, i.e. the SAML Subject (e.g. jsmith)
+        userPrincipalName: Do not specify if user is not AD authenticated. Used to bind child authentication policies to a user when using Active Directory authentication in a multi-domain setup (e.g. jmiller@example.com)
+
+        Returns created User object.
+        """
+        url = self._client.get_url(self._url_template)
+        data = base.filter_none_values(dict(userName=userName, externalId=externalId, email=email,
+            name=dict(familyName=familyName, givenName=givenName), active=active, sendInvite=sendInvite, authType=authType,
+            userType=userType, role=role, idpUserId=idpUserId, userPrincipalName=userPrincipalName))
+        json = exc.created.check_json_response(self._client.POST(url, data))
+        return User(self._client, **json)
+
 
 class PermissionSet(object):
     """Wrapper for a permission set"""
+
     def __init__(self, json):
         self._users = json.get('users', ())
         self._groups = json.get('groups', ())
@@ -351,5 +430,3 @@ class PermissionSet(object):
         for d in self._groups:
             self.group_to_permission[d['subject']] = d['permission']
             self.permission_to_owner[d['permission']]['groups'].add(d['subject'])
-
-
