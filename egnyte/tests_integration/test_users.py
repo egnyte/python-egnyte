@@ -11,7 +11,7 @@ class TestUserInfo(TestCase):
                             familyName="John", givenName="Doe", active=False, sendInvite=False)
         try:
             search = users.list()
-            self.assertIn(user, search['users'], "User should be in list of all users")
+            self.assertIn(user, search, "User should be in list of all users")
 
             user2 = users.by_email("test_user_1@example.com")
             self.assertEqual(user, user2, "Should find user by email")

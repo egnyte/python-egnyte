@@ -9,7 +9,6 @@ from egnyte import exc, base, resources, audits
 
 class EgnyteClient(base.Session):
     """Main client objects. This should be the only object you have to manually create in standard API use."""
-
     @property
     def links(self):
         """API for Links management"""
@@ -30,6 +29,11 @@ class EgnyteClient(base.Session):
     @property
     def audits(self):
         return audits.Audits(self)
+
+    @property
+    def notes(self):
+        """API for Notes management"""
+        return resources.Notes(self)
 
     def folder(self, path="/Shared", **kwargs):
         """Get a Folder object for the specified path"""

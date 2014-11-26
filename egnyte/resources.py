@@ -155,6 +155,17 @@ class File(FileOrFolder):
         """Delete this file."""
         base.Resource.delete(self)
 
+    def add_note(self, message):
+        """
+        Add a note to this file.
+        Returns the created Note object.
+        """
+        return self._client.notes.create(self.path, message)
+
+    def get_notes(self, **kwargs):
+        """Get notes attached to this file."""
+        return self._client.notes.list(file=self.path, **kwargs)
+
 
 class Folder(FileOrFolder):
     """
@@ -214,6 +225,9 @@ class Folder(FileOrFolder):
         r = exc.default.check_json_response(self._client.GET(url, params=dict(folder=self.path)))
         return r
 
+    def get_notes(self, **kwargs):
+        """Get notes attached to any file in this folder."""
+        return self._client.notes.list(folder=self.path, **kwargs)
 
 class Link(base.Resource):
     """Link to a file or folder"""
@@ -268,16 +282,22 @@ class User(base.Resource):
         return r
 
 
-class Files(base.HasClient):
-    """Collection of files."""
+class Note(base.Resource):
+    """Note attached to a file or folder."""
+    _url_template = "pubapi/v1/notes/%(id)s"
+    _lazy_attributes = {'file_id', 'file_path', 'can_delete', 'creation_time', 'message', 'username', 'formatted_name'}
 
+    def delete(self):
+        """Delete this Note"""
+        base.Resource.delete(self)
 
-class Folders(base.HasClient):
-    """Collection of folders"""
-
+    def get_file(self):
+        """Get File this note is attached to."""
+        return self._client.file(self.file_path)
+    
 
 class Links(base.HasClient):
-    """Collection of links"""
+    """Link management API"""
     _url_template = "pubapi/v1/links"
 
     def create(self, path, type, accessibility,
@@ -332,19 +352,19 @@ class Links(base.HasClient):
         offset: Start at this link, where offset=0 means start with first link.
         count: Send this number of links. If not specified, all links will be sent.
 
-        Returns sequence of Link objects.
+        Returns a list of Link objects, with additional total_count and offset attributes.
         """
         url = self._client.get_url(self._url_template)
         params = base.filter_none_values(dict(path=path, username=username, created_before=base.date_format(created_before),
                 created_after=base.date_format(created_after), type=type, accessibility=accessibility,
                 offset=offset, count=count))
         json = exc.default.check_json_response(self._client.GET(url, params=params))
-        json['links'] = [self.get(id) for id in json.pop('ids', ())]
-        return json
+        return base.ResultList((Link(self._client, id=id) for id in json.get('ids', ())), json['total_count'], json['offset'])
+
 
 
 class Users(base.HasClient):
-    """Collection of users"""
+    """User management API"""
     _url_template = "pubapi/v2/users"
 
     def list(self, email=None, externalId=None, userName=None, startIndex=None, count=None):
@@ -352,20 +372,14 @@ class Users(base.HasClient):
         Search users. Optional search parameters are 'email', 'externalId' and 'userName'.
         startIndex (starts with 1) and count may be used for pagination
 
-        Returns a dictionary with following keys:
-        totalResults: total number of results
-        itemsPerPage: how many users in this batch: 2
-        startIndex: index of first user in this batch
-        users: list of User objects
+        Returns a list of User objects, with additional total_count and offset attributes.
         """
         url = self._client.get_url(self._url_template)
         filters = base.filter_none_values(dict(email=email, externalId=externalId, userName=userName))
         params = base.filter_none_values(dict(startIndex=startIndex, count=count))
         params['filter'] = [u'%s eq "%s"' % (k, v) for (k, v) in filters.items()]
         json = exc.default.check_json_response(self._client.GET(url, params=params))
-        users = json.pop('resources', ())
-        json['users'] = [User(self._client, **d) for d in users]
-        return json
+        return base.ResultList((User(self._client, **d) for d in json.get('resources', ())), json['totalResults'], json['startIndex']-1)
 
     def get(self, id):
         """Get a User object by id. Does not check if User exists."""
@@ -374,14 +388,14 @@ class Users(base.HasClient):
     def by_email(self, email):
         """Get a User object by email. Returns None if user does not exist"""
         try:
-            return self.list(email=email)['users'][0]
+            return self.list(email=email)[0]
         except LookupError:
             pass
 
     def by_username(self, userName):
         """Get a User object by username. Returns None if user does not exist"""
         try:
-            return self.list(userName=userName)['users'][0]
+            return self.list(userName=userName)[0]
         except LookupError:
             pass
 
@@ -431,3 +445,41 @@ class PermissionSet(object):
         for d in self._groups:
             self.group_to_permission[d['subject']] = d['permission']
             self.permission_to_owner[d['permission']]['groups'].add(d['subject'])
+
+class Notes(base.HasClient):
+    """
+    Notes management API
+    """
+    _url_template = "pubapi/v1/notes"
+
+    def create(self, path, message):
+        """
+        Create a new note.
+        Parameters:
+        path - path to the file the note is about
+        message - contents of the note
+        Returns the created Note object.
+        """
+        url = self._client.get_url(self._url_template)
+        data = dict(path=path, body=message)
+        json = exc.created.check_json_response(self._client.POST(url, data))
+        return Note(self._client, **json)
+
+    def list(self, file=None, folder=None, start_time=None, end_time=None):
+        """
+        List existing notes.
+        Optional filtering params:
+        start_time: Get notes created after start_time (datetime.date or string in 'YYYY-MM-DD' format)
+        file: Get only notes attached to a specific file (path).
+        folder: Get only notes atatched to files in specific folder (path).
+        end_time: Get notes created before end_time (datetime.date or string in 'YYYY-MM-DD' format)
+        Returns list of Note objects, with additional attributes total_result and offset.
+        """
+        url = self._client.get_url(self._url_template)
+        params = base.filter_none_values(dict(file=file, folder=folder, start_time=base.date_format(start_time),
+                                              end_time=base.date_format(end_time)))
+        json = exc.default.check_json_response(self._client.GET(url, params=params))
+        return base.ResultList((Note(self._client, **d) for d in json.pop('notes', ())), json['total_results'], json['offset'])
+
+
+     

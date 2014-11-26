@@ -315,3 +315,17 @@ def generate_paths(roots, excludes=None):
 def filter_none_values(dict):
     """Return dictionary with values that are None filtered out"""
     return {k: v for (k,v) in dict.items() if v is not None}
+
+class ResultList(list):
+    """
+    List with additional attributes, that represents a part of list of objects that exits in the cloud.
+    total_count: Count of all objects that exist.
+    offset: Starting index of this slice of results.
+    """
+    # TODO: make this more lazy?
+    def __init__(self, data, total_count, offset):
+        super(ResultList, self).__init__(data)
+        self.total_count = total_count
+        self.offset = offset
+    
+
