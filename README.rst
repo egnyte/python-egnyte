@@ -14,15 +14,15 @@ token.
 Examples
 ========
 
-.. code-block:: pycon
+.. code-block:: python
 
-    >>> from egnyte import EgnyteClient
-    >>> client = EgnyteClient({"domain": "<your domain here>.egnyte.com", "access_token": "<your access token here"})
-    >>> folder = client.folder("/Shared/foo that need to be bar")
-    >>> for f in folder.list().files:
-    >>>     data = f.download().read()
-    >>>     f.upload(data.replace(b"foo", b"bar"))
-    >>>     f.add_note("all occurrences of 'foo' replaced by 'bar'!")
+    from egnyte import EgnyteClient
+    client = EgnyteClient({"domain": "<your domain here>.egnyte.com", "access_token": "<your access token here"})
+    folder = client.folder("/Shared/foo that need to be bar")
+    for f in folder.list().files:
+        data = f.download().read()
+        f.upload(data.replace(b"foo", b"bar"))
+        f.add_note("all occurrences of 'foo' replaced by 'bar'!")
 
 examples subdirectory contains example code that should give you good
 idea of how the client library can be used.
