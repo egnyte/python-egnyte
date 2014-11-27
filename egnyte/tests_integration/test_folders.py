@@ -7,8 +7,6 @@ from egnyte import exc
 from egnyte.tests_integration.config import TestCase
 
 
-
-
 class TestFolders(TestCase):
     def setUp(self):
         super(TestFolders, self).setUp()

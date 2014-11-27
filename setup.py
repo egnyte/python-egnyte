@@ -36,5 +36,5 @@ setup(
         "Operating System :: OS Independent",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
-    test_suite = "egnyte"
+    test_suite="egnyte"
 )

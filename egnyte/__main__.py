@@ -14,6 +14,7 @@ from egnyte import client, configuration, exc, base
 
 parser_kwargs = dict(formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=50))
 
+
 def create_main_parser():
     main = argparse.ArgumentParser(prog="python -m egnyte", **parser_kwargs)
     main.add_argument("-c", "--config-path", help="Path to config file")
@@ -43,7 +44,7 @@ def create_main_parser():
     parser_test = subparsers.add_parser('test', help='test if config is correct (connects to service)', **parser_kwargs)
     parser_test.set_defaults(command='test')
 
-    for parser, required in [ (parser_config_create, True), (parser_config_update, False), (parser_token, False) ]:
+    for parser, required in [(parser_config_create, True), (parser_config_update, False), (parser_token, False)]:
         parser.add_argument('-d', '--domain', required=required, help='domain name')
         parser.add_argument('-l', '--login', required=False, help='login')
         parser.add_argument('-p', '--password', required=False, help='password')
@@ -251,7 +252,7 @@ class Commands(object):
     def cmd_audit_get(self):
         api = self.get_client()
         audits = api.audits
-        report = audits.get(id = self.args.id)
+        report = audits.get(id=self.args.id)
         return self.wait_and_save_report(report)
 
     def cmd_audit_files(self):
@@ -301,8 +302,10 @@ class Commands(object):
         api = self.get_client()
         api.bulk_download(self.args.paths, self.args.target, self.args.overwrite, self.transfer_callbacks())
 
+
 class VerboseCallbacks(client.ProgressCallbacks):
     """Progress callbacks used when sys.stdout is a file or a pipe"""
+
     def write(self, text, force_newline=False):
         print(text)
 
@@ -333,6 +336,7 @@ class VerboseCallbacks(client.ProgressCallbacks):
 class TerminalCallbacks(VerboseCallbacks):
     """Progress callbacks used when sys.stdout is a terminal"""
     force_newline = False
+
     def __init__(self):
         self.last_len = 0
 
@@ -340,10 +344,10 @@ class TerminalCallbacks(VerboseCallbacks):
         if force_newline is None:
             force_newline = self.force_newline
         output = ["\r"]
-        sys.stdout.write("\r") # return the carret
-        if len(text) < self.last_len: # clear out previous text
+        sys.stdout.write("\r")  # return the carret
+        if len(text) < self.last_len:  # clear out previous text
             sys.stdout.write(' ' * self.last_len)
-            sys.stdout.write("\r") # return the carret
+            sys.stdout.write("\r")  # return the carret
         output.append(text)
         if force_newline:
             output.append('\n')
@@ -352,10 +356,10 @@ class TerminalCallbacks(VerboseCallbacks):
         self.last_len = len(text)
 
     def download_progress(self, cloud_file, size, downloaded):
-        self.write("Downloading %s, %d%% complete" % (self.current, (downloaded*100)/size))
+        self.write("Downloading %s, %d%% complete" % (self.current, (downloaded * 100) / size))
 
     def upload_progress(self, cloud_file, size, uploaded):
-        self.write("Uploading %s, %d%%" % (self.current, (uploaded*100)/size))
+        self.write("Uploading %s, %d%%" % (self.current, (uploaded * 100) / size))
 
     def download_finish(self, cloud_file):
         self.write("Downloaded %s" % self.current)

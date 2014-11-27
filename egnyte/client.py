@@ -7,6 +7,7 @@ import shutil
 
 from egnyte import exc, base, resources, audits
 
+
 class EgnyteClient(base.Session):
     """Main client objects. This should be the only object you have to manually create in standard API use."""
     @property
@@ -68,9 +69,10 @@ class EgnyteClient(base.Session):
         target - Path in CFS to upload to
         progress_callbacks - Callback object (see ProgressCallbacks)
         """
-        if not paths: return
+        if not paths:
+            return
         if progress_callbacks is None:
-            progress_callbacks = ProgressCallbacks() # no-op callbacks
+            progress_callbacks = ProgressCallbacks()  # no-op callbacks
         target_folder = self.folder(target)
         progress_callbacks.creating_directory(target_folder)
         target_folder.create(True)
@@ -81,7 +83,7 @@ class EgnyteClient(base.Session):
                 cloud_dir.create(True)
             else:
                 size = os.path.getsize(local_path)
-                if size: # empty files cannot be uploaded
+                if size:  # empty files cannot be uploaded
                     cloud_file = target_folder.file(cloud_path, size=size)
                     with open(local_path, "rb") as fp:
                         progress_callbacks.upload_start(local_path, cloud_file, size)
@@ -129,7 +131,6 @@ class EgnyteClient(base.Session):
                 progress_callbacks.download_start(local_path, obj, obj.size)
                 obj.download().save_to(local_path, progress_callbacks.download_progress)
                 progress_callbacks.download_finish(obj)
-        
 
     def bulk_download(self, paths, local_dir, overwrite=False, progress_callbacks=None):
         """
@@ -144,7 +145,7 @@ class EgnyteClient(base.Session):
             progress_callbacks.getting_info(path)
             obj = self.get(path)
             progress_callbacks.got_info(obj)
-            root_path = path[:path.rstrip('/').rfind('/')] # take all segments expect last one
+            root_path = path[:path.rstrip('/').rfind('/')]  # take all segments expect last one
             if obj.is_folder:
                 items = obj.files + obj.folders
             else:
@@ -153,12 +154,12 @@ class EgnyteClient(base.Session):
         progress_callbacks.finished()
 
 
-
 class ProgressCallbacks(object):
     """
     This object is used for bulk transfers (uploads and downloads)
     Inherit this and add override any of the callabcks you'd like to handle.
     """
+
     def getting_info(self, cloud_path):
         """Getting information about an object. Called for directories and unknown paths."""
 
@@ -191,6 +192,3 @@ class ProgressCallbacks(object):
 
     def skipped(self, cloud_obj, reason):
         """Object has been skipped because of 'reason'"""
-
-
-        

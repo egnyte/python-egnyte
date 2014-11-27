@@ -229,6 +229,7 @@ class Folder(FileOrFolder):
         """Get notes attached to any file in this folder."""
         return self._client.notes.list(folder=self.path, **kwargs)
 
+
 class Link(base.Resource):
     """Link to a file or folder"""
     _url_template = "pubapi/v1/links/%(id)s"
@@ -294,7 +295,7 @@ class Note(base.Resource):
     def get_file(self):
         """Get File this note is attached to."""
         return self._client.file(self.file_path)
-    
+
 
 class Links(base.HasClient):
     """Link management API"""
@@ -324,9 +325,9 @@ class Links(base.HasClient):
         """
         url = self._client.get_url(self._url_template)
         data = base.filter_none_values(dict(path=path, type=type, accessibility=accessibility, send_email=send_email,
-            copy_me=copy_me, notify=notify, add_filename=add_filename, link_to_current=link_to_current,
-            expiry_clicks=expiry_clicks, expiry_date=base.date_format(expiry_date),
-            recipients=recipients, message=message))
+                                            copy_me=copy_me, notify=notify, add_filename=add_filename, link_to_current=link_to_current,
+                                            expiry_clicks=expiry_clicks, expiry_date=base.date_format(expiry_date),
+                                            recipients=recipients, message=message))
         response = exc.default.check_json_response(self._client.POST(url, data))
         # This response has weird structure
         links = response.pop('links')
@@ -356,11 +357,10 @@ class Links(base.HasClient):
         """
         url = self._client.get_url(self._url_template)
         params = base.filter_none_values(dict(path=path, username=username, created_before=base.date_format(created_before),
-                created_after=base.date_format(created_after), type=type, accessibility=accessibility,
-                offset=offset, count=count))
+                                              created_after=base.date_format(created_after), type=type, accessibility=accessibility,
+                                              offset=offset, count=count))
         json = exc.default.check_json_response(self._client.GET(url, params=params))
         return base.ResultList((Link(self._client, id=id) for id in json.get('ids', ())), json['total_count'], json['offset'])
-
 
 
 class Users(base.HasClient):
@@ -379,7 +379,7 @@ class Users(base.HasClient):
         params = base.filter_none_values(dict(startIndex=startIndex, count=count))
         params['filter'] = [u'%s eq "%s"' % (k, v) for (k, v) in filters.items()]
         json = exc.default.check_json_response(self._client.GET(url, params=params))
-        return base.ResultList((User(self._client, **d) for d in json.get('resources', ())), json['totalResults'], json['startIndex']-1)
+        return base.ResultList((User(self._client, **d) for d in json.get('resources', ())), json['totalResults'], json['startIndex'] - 1)
 
     def get(self, id):
         """Get a User object by id. Does not check if User exists."""
@@ -398,7 +398,6 @@ class Users(base.HasClient):
             return self.list(userName=userName)[0]
         except LookupError:
             pass
-
 
     def create(self, userName, externalId, email, familyName, givenName, active=True, sendInvite=True, authType='egnyte',
                userType='power', role=None, idpUserId=None, userPrincipalName=None):
@@ -421,8 +420,8 @@ class Users(base.HasClient):
         """
         url = self._client.get_url(self._url_template)
         data = base.filter_none_values(dict(userName=userName, externalId=externalId, email=email,
-            name=dict(familyName=familyName, givenName=givenName), active=active, sendInvite=sendInvite, authType=authType,
-            userType=userType, role=role, idpUserId=idpUserId, userPrincipalName=userPrincipalName))
+                                            name=dict(familyName=familyName, givenName=givenName), active=active, sendInvite=sendInvite, authType=authType,
+                                            userType=userType, role=role, idpUserId=idpUserId, userPrincipalName=userPrincipalName))
         json = exc.created.check_json_response(self._client.POST(url, data))
         return User(self._client, **json)
 
@@ -445,6 +444,7 @@ class PermissionSet(object):
         for d in self._groups:
             self.group_to_permission[d['subject']] = d['permission']
             self.permission_to_owner[d['permission']]['groups'].add(d['subject'])
+
 
 class Notes(base.HasClient):
     """
@@ -480,6 +480,3 @@ class Notes(base.HasClient):
                                               end_time=base.date_format(end_time)))
         json = exc.default.check_json_response(self._client.GET(url, params=params))
         return base.ResultList((Note(self._client, **d) for d in json.pop('notes', ())), json['total_results'], json['offset'])
-
-
-     

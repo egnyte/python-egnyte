@@ -1,12 +1,5 @@
 """
 Exceptions and their handlers.
-
-Left over from Ruby client:
-  class FolderExpected < StandardError; end
-  class BadRequest < EgnyteError; end
-  class DuplicateRecordExists < EgnyteError; end
-  class MissingAttribute < EgnyteError; end
-
 """
 
 from six.moves import http_client

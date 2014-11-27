@@ -10,7 +10,7 @@ class TestNotes(TestCase):
     def test_notes(self):
         folder = self.root_folder.folder('notes')
         folder.create(True)
-        
+
         f = folder.file('test.txt')
         f.upload(b'foobar')
 
@@ -28,6 +28,3 @@ class TestNotes(TestCase):
             self.assertNotIn(note, all)
         finally:
             f.delete()
-
-
-

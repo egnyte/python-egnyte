@@ -1,5 +1,6 @@
 from egnyte.tests_integration.config import TestCase
 
+
 class TestUserInfo(TestCase):
     def test_userinfo(self):
         data = self.client.user_info
@@ -24,4 +25,3 @@ class TestUserInfo(TestCase):
 
         finally:
             user.delete()
-

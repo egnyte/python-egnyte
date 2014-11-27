@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from egnyte import base, exc
 
+
 class Audits(base.HasClient):
     """
     This resource is used to generated various kinds of audit reports.
@@ -78,10 +79,8 @@ class Audits(base.HasClient):
         return AuditReport(self._client, id=self._job_id(r), format=format, type='permissions')
 
     def get(self, id):
-      """Get a previously generated report by it's id"""
-      return AuditReport(self._client, id=id)
-
-
+        """Get a previously generated report by it's id"""
+        return AuditReport(self._client, id=id)
 
 
 class AuditReport(base.Resource):
@@ -101,7 +100,7 @@ class AuditReport(base.Resource):
         exc.default.check_response(r)
         return False
 
-    def wait(self, check_time = 5.0):
+    def wait(self, check_time=5.0):
         """
         Block until report is ready.
         Propably only useful for command line applications.

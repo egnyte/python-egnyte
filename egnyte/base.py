@@ -219,6 +219,7 @@ def date_format(date):
     else:
         return date
 
+
 def encode_path(path):
     if isinstance(path, text_type):
         path = path.encode('utf-8')
@@ -286,12 +287,14 @@ class FileDownload(object):
 DEFAULT_EXCLUDES = fnmatch.translate(".*")
 DEFAULT_EXCLUDES_RE = re.compile(DEFAULT_EXCLUDES).match
 
+
 def make_excluded(excludes=None):
     if excludes is None:
         return DEFAULT_EXCLUDES_RE
     patterns = [DEFAULT_EXCLUDES]
     patterns.extend(fnmatch.translated(x) for x in excludes)
     return re.compile("|".join(patterns)).match
+
 
 def generate_paths(roots, excludes=None):
     """
@@ -308,14 +311,16 @@ def generate_paths(roots, excludes=None):
                 prefix_len = len(os.path.dirname(root))
                 for dirpath, dirnames, filenames in os.walk(root, topdown=True, followlinks=True):
                     relpath = dirpath[prefix_len:].strip('/')
-                    for is_dir, names in ( (False, filenames), (True, dirnames) ):
+                    for is_dir, names in ((False, filenames), (True, dirnames)):
                         for name in names:
                             if not excluded(name):
                                 yield is_dir, os.path.join(dirpath, name), "%s/%s" % (relpath, name)
 
+
 def filter_none_values(dict):
     """Return dictionary with values that are None filtered out"""
-    return {k: v for (k,v) in dict.items() if v is not None}
+    return {k: v for (k, v) in dict.items() if v is not None}
+
 
 class ResultList(list):
     """
@@ -324,9 +329,8 @@ class ResultList(list):
     offset: Starting index of this slice of results.
     """
     # TODO: make this more lazy?
+
     def __init__(self, data, total_count, offset):
         super(ResultList, self).__init__(data)
         self.total_count = total_count
         self.offset = offset
-    
-
