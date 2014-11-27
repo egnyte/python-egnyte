@@ -1,21 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+import os.path
 
 try:
     from setuptools import setup
 except ImportError:
     from distutils.core import setup
 
-try:
-    with open("README.rst", "rt") as f:
-        long_description = f.read()
-except IOError: # use update-readme
-    long_description = ""
+with open(os.path.join(os.path.dirname(__file__, "README.rst")), "rt") as f:
+    long_description = f.read()
 
 setup(
     name='egnyte',
-    version='0.3',
+    version='0.4',
     author='Vijayendra Bapte, Maciej Szumocki',
     author_email='api-support@egnyte.com',
     license='MIT',
