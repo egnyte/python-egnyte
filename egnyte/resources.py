@@ -48,11 +48,11 @@ class FileOrFolder(base.Resource):
                                           expiry_date=expiry_date, expiry_clicks=expiry_clicks, add_filename=add_filename)
 
     def _get(self):
-        """Get the appropiate object type (File or Folder), depending on what this path points to in the Cloud File System"""
+        """Get the right object type (File or Folder), depending on what this path points to in the Cloud File System"""
         json = exc.default.check_json_response(self._client.GET(self._url))
         if json['is_folder'] and not isinstance(self, Folder):
             instance = Folder(self._client, path=self.path)
-        elif not json['is_folder'] and not instance(self, File):
+        elif not json['is_folder'] and not isinstance(self, File):
             instance = File(self._client, path=self.path)
         else:
             instance = self

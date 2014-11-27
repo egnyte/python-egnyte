@@ -44,7 +44,7 @@ class EgnyteClient(base.Session):
         return resources.File(self, path=path, **kwargs)
 
     def get(self, path):
-        """Check whether a path is a file or a folder and return appropiate object."""
+        """Check whether a path is a file or a folder and return the right object."""
         return self.folder(path)._get()
 
     def impersonate(self, username):

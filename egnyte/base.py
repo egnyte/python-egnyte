@@ -31,7 +31,7 @@ class Session(object):
         self.config = config if isinstance(config, dict) else configuration.load(config)
         domain = self.config['domain']
         if '.' not in domain:
-            domain = domain + ".egnyte.com"
+            domain += ".egnyte.com"
         self._url_prefix = "https://%s/" % domain
         self._session = requests.Session()
         if 'access_token' in self.config:
@@ -40,11 +40,6 @@ class Session(object):
             self.time_between_requests = config['time_between_requests']
         elif 'requests_per_second' in self.config:
             self.time_between_requests = 1.0 / float(self.config['requests_per_second'])
-
-    def _encode_path(self, path):
-        if isinstance(path, text_type):
-            path = path.encode('utf-8')
-        return quote(path, b'/')
 
     def _respect_limits(self):
         if self.time_between_requests:
@@ -88,7 +83,7 @@ class Session(object):
 
     def get_url(self, _path, **kwargs):
         if kwargs:
-            kw = {k: self._encode_path(v) if isinstance(v, string_types) else str(v) for k, v in kwargs.items()}
+            kw = {k: encode_path(v) if isinstance(v, string_types) else str(v) for k, v in kwargs.items()}
             return self._url_prefix + _path % kw
         else:
             return self._url_prefix + _path
@@ -217,11 +212,17 @@ def get_file_size(fp):
     fp.seek(0, 0)  # move the current position to the beginning of the file
     return size
 
+
 def date_format(date):
     if isinstance(date, (datetime.datetime, datetime.date)):
         return date.strftime("%Y-%m-%d")
     else:
         return date
+
+def encode_path(path):
+    if isinstance(path, text_type):
+        path = path.encode('utf-8')
+    return quote(path, b'/')
 
 
 class FileDownload(object):
@@ -275,7 +276,7 @@ class FileDownload(object):
     def __iter__(self, **kwargs):
         """
         Iterate response body line by line.
-        You can speficify alternate delimiter with delimiter parameter.
+        You can specify alternate delimiter with delimiter parameter.
         """
         return self.response.iter_lines(**kwargs)
 
