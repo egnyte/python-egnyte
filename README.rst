@@ -32,7 +32,7 @@ Command line
 
 If you're using implicit flow, you'll need to provide access token directly.
 If you're using API token with resource flow, you can generate API access token using command line options.
-Check doc/COMMANDS.md for details.
+Check doc/COMMANDS_ for details.
 
 Dependencies
 ============
@@ -53,7 +53,7 @@ to do so if necessary.
 Running tests
 =============
 
-Check doc/TESTS.md
+Check doc/TESTS_
 
 Helping with development
 ========================
