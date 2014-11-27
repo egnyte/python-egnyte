@@ -32,7 +32,7 @@ Command line
 
 If you're using implicit flow, you'll need to provide access token directly.
 If you're using API token with resource flow, you can generate API access token using command line options.
-Check doc/COMMANDS_ for details.
+Check COMMANDS_ for details.
 
 Dependencies
 ============
@@ -53,7 +53,7 @@ to do so if necessary.
 Running tests
 =============
 
-Check doc/TESTS_
+Check TESTS_
 
 Helping with development
 ========================
@@ -67,3 +67,6 @@ information what you're fixing.
 
 Please remember to assign copyright of your fixes to Egnyte or make them
 public domain so we can legally merge them.
+
+.. _COMMANDS: https://github.com/egnyte/python-egnyte/blob/master/doc/COMMANDS.rst
+.. _TESTS: https://github.com/egnyte/python-egnyte/blob/master/doc/TESTS.rst
