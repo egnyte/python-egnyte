@@ -222,6 +222,7 @@ class Folder(FileOrFolder):
 
     def get_effective_permissions(self, username):
         url = self._client.get_url(self._url_template_effective_permissions, username=username)
+        print(url)
         r = exc.default.check_json_response(self._client.GET(url, params=dict(folder=self.path)))
         return r
 

@@ -4,10 +4,10 @@ from __future__ import unicode_literals
 
 from egnyte import exc
 
-from egnyte.tests_integration.config import TestCase
+from egnyte.tests.config import IntegrationCase
 
 
-class TestFolders(TestCase):
+class TestFolders(IntegrationCase):
     def setUp(self):
         super(TestFolders, self).setUp()
         self.folder = self.root_folder.folder('Iñtërnâtiônàlizætiøν☃ test')

@@ -1,9 +1,9 @@
 from six import BytesIO
 
-from egnyte.tests_integration.config import TestCase
+from egnyte.tests.config import IntegrationCase
 
 
-class TestFiles(TestCase):
+class TestFiles(IntegrationCase):
     def setUp(self):
         super(TestFiles, self).setUp()
         self.filepath = self.root_folder.path + '/test.txt'

@@ -3,10 +3,10 @@ from __future__ import print_function
 import datetime
 
 from egnyte import exc
-from egnyte.tests_integration.config import TestCase
+from egnyte.tests.config import IntegrationCase
 
 
-class TestNotes(TestCase):
+class TestNotes(IntegrationCase):
     def test_notes(self):
         folder = self.root_folder.folder('notes')
         folder.create(True)
