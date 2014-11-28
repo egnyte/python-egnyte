@@ -8,6 +8,8 @@ class TestPermissions(IntegrationCase):
     def test_permissions(self):
         folder = self.root_folder.folder("permissions_1").create(True)
         permissions = folder.get_permissions()
+        self.assertEquals(permissions.user_to_permission[self.config['login']], 'Owner')
+        self.assertIn(self.config['login'], permissions.permission_to_owner['Owner']['users'])
 
     @skip('Does not work yet')
     def test_effective(self):

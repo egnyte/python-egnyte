@@ -220,6 +220,14 @@ class Folder(FileOrFolder):
         r = exc.default.check_json_response(self._client.GET(url, params=query_params))
         return PermissionSet(r)
 
+    def set_permissions(self, permission, users=None, groups=None):
+        """
+        Set permission level for some users and/or groups for this folder.
+        """
+        url = self._client.get_url(self._url_template_permissions, path=self.path)
+        data = base.filter_none_values(dict(permission=permission, users=users, groups=groups))
+        exc.default.check_response(self._client.POST(url, data))
+
     def get_effective_permissions(self, username):
         url = self._client.get_url(self._url_template_effective_permissions, username=username)
         print(url)
