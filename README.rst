@@ -17,24 +17,28 @@ Examples
 * create a client object
 
 .. code-block:: python
+
     from egnyte import EgnyteClient
     client = EgnyteClient({"domain": "<your domain here>.egnyte.com", "access_token": "<your access token here"})
 
 * create a folder
 
 .. code-block:: python
+
     folder = cient.folder("/Shared/new")
     folder.create(ignore_if_exists=True)
 
 * delete a folder
 
 .. code-block:: python
+
     folder = client.folder("/Shared/time to say goodbye")
     folder.delete()
 
 * get a list of files in a folder, download a file, replace it's contents, add a note
 
 .. code-block:: python
+
     folder = client.folder("/Shared/foo that need to be bar")
     folder.list()
     for file_obj in folder.files:
@@ -47,6 +51,7 @@ Examples
 * get a list of files in a subfolders
 
 .. code-block:: python
+
     folder = client.folder("/Shared")
     folder.list()
     for folder_obj in folder.folders:
@@ -55,6 +60,7 @@ Examples
 * upload a new file from local file
 
 .. code-block:: python
+
     file_obj = client.file("/Private/smeagol/my precious")
     with open("local path", "rb") as fp:
         file_obj.upload(fp)
@@ -62,16 +68,19 @@ Examples
 * delete a file
 
 .. code-block:: python
+
     file_obj.delete()
 
 * do a recursive download
 
 .. code-block:: python
+
     client.bulk_download(['/Shared/a dir', '/Shared/another dir'], '/home/smeagol/', overwrite=True)
 
 * do a recursive upload
 
 .. code-block:: python
+
     api.bulk_upload(['/tmp/some directory', '/tmp/some file'], '/Shared/Marketing')
 
 
