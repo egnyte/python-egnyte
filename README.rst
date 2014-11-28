@@ -19,7 +19,8 @@ Examples
 .. code-block:: python
 
     from egnyte import EgnyteClient
-    client = EgnyteClient({"domain": "<your domain here>.egnyte.com", "access_token": "<your access token here"})
+    client = EgnyteClient({"domain": "<your domain here>.egnyte.com",
+        "access_token": "<your access token here"})
 
 * create a folder
 
@@ -75,7 +76,8 @@ Examples
 
 .. code-block:: python
 
-    client.bulk_download(['/Shared/a dir', '/Shared/another dir'], '/home/smeagol/', overwrite=True)
+    client.bulk_download(['/Shared/a dir', '/Shared/another dir'],
+        '/home/smeagol/', overwrite=True)
 
 * do a recursive upload
 
