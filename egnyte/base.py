@@ -1,6 +1,5 @@
 from __future__ import print_function, unicode_literals
 
-from contextlib import closing
 import datetime
 import fnmatch
 import hashlib
@@ -235,6 +234,7 @@ class FileDownload(object):
     def __init__(self, response, file):
         self.response = response
         self.file = file
+        self.closed = False
 
     def __len__(self):
         return int(self.response.headers['content-length'])
@@ -245,7 +245,7 @@ class FileDownload(object):
         Optional progress_callback should have the signature of ProgressCallbacks.download_progress
         """
         downloaded = 0
-        with closing(self):
+        with self:
             for chunk in self.iter_content():
                 fp.write(chunk)
                 if progress_callback is not None:
@@ -261,10 +261,8 @@ class FileDownload(object):
             self.write_to(fp, progress_callback)
 
     def close(self):
-        self.response.close()
-
-    def closed(self):
-        return self.response.closed()
+        if not self.closed:
+            self.response.close()
 
     def read(self, amt=None, decode_content=True):
         """
@@ -283,6 +281,12 @@ class FileDownload(object):
 
     def iter_content(self, chunk_size=16 * 1024):
         return self.response.iter_content(chunk_size)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
 DEFAULT_EXCLUDES = fnmatch.translate(".*")
 DEFAULT_EXCLUDES_RE = re.compile(DEFAULT_EXCLUDES).match

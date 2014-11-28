@@ -14,18 +14,57 @@ token.
 Examples
 ========
 
+* create a client object
 .. code-block:: python
-
     from egnyte import EgnyteClient
     client = EgnyteClient({"domain": "<your domain here>.egnyte.com", "access_token": "<your access token here"})
-    folder = client.folder("/Shared/foo that need to be bar")
-    for f in folder.list().files:
-        data = f.download().read()
-        f.upload(data.replace(b"foo", b"bar"))
-        f.add_note("all occurrences of 'foo' replaced by 'bar'!")
 
-examples subdirectory contains example code that should give you good
-idea of how the client library can be used.
+* create a folder
+.. code-block:: python
+    folder = cient.folder("/Shared/new")
+    folder.create(ignore_if_exists=True)
+
+* delete a folder
+.. code-block:: python
+    folder = client.folder("/Shared/time to say goodbye")
+    folder.delete()
+
+* get a list of files in a folder, download a file, replace it's contents, add a note
+.. code-block:: python
+    folder = client.folder("/Shared/foo that need to be bar")
+    folder.list()
+    for file_obj in folder.files:
+        with file_obj.download() as download:
+            data = download.read()
+        # replace file contents
+        file_obj.upload(data.replace(b"foo", b"bar"))
+        file_obj.add_note("all occurrences of 'foo' replaced by 'bar'!")
+
+* get a list of files in a subfolders
+.. code-block:: python
+    folder = client.folder("/Shared")
+    folder.list()
+    for folder_obj in folder.folders:
+        do_something(folder_obj)
+
+* upload a new file from local file
+.. code-block:: python
+    file_obj = client.file("/Private/smeagol/my precious")
+    with open("local path", "rb") as fp:
+        file_obj.upload(fp)
+
+* delete a file
+.. code-block:: python
+    file_obj.delete()
+
+* do a recursive download
+.. code-block:: python
+    client.bulk_download(['/Shared/a dir', '/Shared/another dir'], '/home/smeagol/', overwrite=True)
+
+* do a recursive upload
+.. code-block:: python
+    api.bulk_upload(['/tmp/some directory', '/tmp/some file'], '/Shared/Marketing')
+
 
 Command line
 ============
