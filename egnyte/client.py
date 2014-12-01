@@ -36,6 +36,26 @@ class EgnyteClient(base.Session):
         """API for Notes management"""
         return resources.Notes(self)
 
+    @property
+    def settings(self):
+        """Domain settings."""
+        if not hasattr(self, '_cached_settings'):
+            result  = {}
+            urls = (
+                ('user', "pubapi/v2/users/settings"),
+                ('link', "pubapi/v1/links/settings"),
+                ('folder', "pubapi/v1/fs/settings"),
+                ('audit', "pubapi/v1/audit/settings"),
+            )
+            for name, url in urls:
+                try:
+                    result[name] = exc.default.check_json_response(self.GET(self.get_url(url)))
+                except Exception: #exc.InsufficientPermissions:
+                    pass
+
+            self._cached_settings = result
+        return self._cached_settings
+
     def folder(self, path="/Shared", **kwargs):
         """Get a Folder object for the specified path"""
         return resources.Folder(self, path=path.rstrip('/'), **kwargs)

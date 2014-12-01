@@ -151,7 +151,7 @@ class ErrorMapping(dict):
         if not len(ok_statuses):
             ok_statuses = self.ok_statuses
         if response.status_code not in ok_statuses:
-            errors = []
+            errors = [{'url': response.url}]
             error_type = self.map_error(response)
             try:
                 data = response.json()
@@ -165,7 +165,7 @@ class ErrorMapping(dict):
         return response
 
     def ignore_error(self, errors):
-        errors = recursive_tuple(errors)
+        errors = recursive_tuple(errors[1:])
         if errors and self.ignored_errors:
             result = any((errors == ignored) for ignored in self.ignored_errors)
             return result

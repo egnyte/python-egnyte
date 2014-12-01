@@ -174,7 +174,7 @@ class Folder(FileOrFolder):
     """
     _url_template = "pubapi/v1/fs%(path)s"
     _url_template_permissions = "pubapi/v1/perms/folder/%(path)s"
-    _url_template_effective_permissions = "pubabi/v1/perms/user/%(username)s"
+    _url_template_effective_permissions = "pubapi/v1/perms/user/%(username)s"
     _lazy_attributes = {'name', 'folder_id', 'is_folder'}
     _link_kind = 'folder'
     folders = None
@@ -229,10 +229,15 @@ class Folder(FileOrFolder):
         exc.default.check_response(self._client.POST(url, data))
 
     def get_effective_permissions(self, username):
+        """
+        Get effective permissions to this folder for a specific user.
+        username: name of user (string)
+        Returns one of 'Owner', 'Full', 'Editor', 'Viewer'
+        """
         url = self._client.get_url(self._url_template_effective_permissions, username=username)
-        print(url)
-        r = exc.default.check_json_response(self._client.GET(url, params=dict(folder=self.path)))
-        return r
+        params = dict(folder=self.path)
+        r = exc.default.check_json_response(self._client.GET(url, params=params))
+        return r['permission']
 
     def get_notes(self, **kwargs):
         """Get notes attached to any file in this folder."""
@@ -489,3 +494,4 @@ class Notes(base.HasClient):
                                               end_time=base.date_format(end_time)))
         json = exc.default.check_json_response(self._client.GET(url, params=params))
         return base.ResultList((Note(self._client, **d) for d in json.pop('notes', ())), json['total_results'], json['offset'])
+

@@ -111,6 +111,9 @@ def create_main_parser():
     parser_download.add_argument('--target', help="Local directory to put downloaded files and directories in", default='.')
     parser_download.add_argument('--overwrite', action='store_const', const=True, default=False, help="Delete local files and directories that conflict with cloud content")
 
+    parser_settings = subparsers.add_parser('settings', help='show domain settings', **parser_kwargs)
+    parser_settings.set_defaults(command="settings")
+
     return main
 
 
@@ -189,8 +192,11 @@ class Commands(object):
             config['password'] = getpass.getpass("Enter the password: ")
             return config
 
+    def print_json(self, obj):
+        print(json.dumps(obj, indent=2, sort_keys=True))
+
     def cmd_config_show(self):
-        print(json.dumps(self.config, indent=2, sort_keys=True))
+        self.print_json(self.config)
 
     def cmd_config_create(self):
         self._config = {}
@@ -302,6 +308,9 @@ class Commands(object):
         api = self.get_client()
         api.bulk_download(self.args.paths, self.args.target, self.args.overwrite, self.transfer_callbacks())
 
+    def cmd_settings(self):
+        self.print_json(self.get_client().settings)
+
 
 class VerboseCallbacks(client.ProgressCallbacks):
     """Progress callbacks used when sys.stdout is a file or a pipe"""
@@ -371,6 +380,10 @@ class TerminalCallbacks(VerboseCallbacks):
 def main():
     parsed = create_main_parser().parse_args()
     sys.exit(Commands(parsed).run())
+
+def full_help():
+    parser = create_main_parser()
+    return parser.format_help()
 
 if __name__ == '__main__':
     main()
