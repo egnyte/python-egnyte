@@ -4,6 +4,10 @@ Exceptions and their handlers.
 
 from six.moves import http_client
 
+__all__ = """
+EgnyteError InvalidParameters InsufficientPermissions NotFound Redirected NotAuthorized JsonParseError DomainRequired ClientIdRequired
+OAuthUsernameRequired OAuthPasswordRequired UnsupportedAuthStrategy RequestError DuplicateRecordExists FileSizeExceedsLimit ChecksumError
+""".split()
 
 class EgnyteError(Exception):
     """Base class for Egnyte SDK exceptions"""
@@ -32,7 +36,7 @@ class NotFound(EgnyteError):
 
 
 class Redirected(EgnyteError):
-    """Received unexpected HTTP 303 respone"""
+    """Received unexpected HTTP 303 response"""
 
 
 class NotAuthorized(EgnyteError):

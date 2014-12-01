@@ -17,10 +17,12 @@ class Audits(base.HasClient):
         """
         Generate login report.
         Parameters:
-          format: 'csv' or 'json'
-          date_start: datetime.date - first day report should cover
-          date_end: datetime.date - last day report should cover
 
+        * format: 'csv' or 'json'
+        * date_start: string in 'YYYY-MM-DD' format or datetime.date - first day report should cover
+        * date_end: string in 'YYYY-MM-DD' format or datetime.date - last day report should cover
+
+        Returns an AuditReport object.
         """
         json = dict(format=format,
                     date_start=base.date_format(date_start),
@@ -38,10 +40,12 @@ class Audits(base.HasClient):
         """
         Generate files report.
         Parameters:
-          format: 'csv' or 'json'
-          date_start: datetime.date - first day report should cover
-          date_end: datetime.date - last day report should cover
 
+        * format: 'csv' or 'json'
+        * date_start: string in 'YYYY-MM-DD' format or datetime.date - first day report should cover
+        * date_end: string in 'YYYY-MM-DD' format or datetime.date - last day report should cover
+
+        Returns an AuditReport object.
         """
         json = dict(format=format,
                     date_start=base.date_format(date_start),
@@ -62,10 +66,12 @@ class Audits(base.HasClient):
         """
         Generate permissions report.
         Parameters:
-          format: 'csv' or 'json'
-          date_start: datetime.date - first day report should cover
-          date_end: datetime.date - last day report should cover
 
+        * format: 'csv' or 'json'
+        * date_start: string in 'YYYY-MM-DD' format or datetime.date - first day report should cover
+        * date_end: string in 'YYYY-MM-DD' format or datetime.date - last day report should cover
+
+        Returns an AuditReport object.
         """
         json = dict(format=format,
                     date_start=base.date_format(date_start),

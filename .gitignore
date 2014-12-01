@@ -16,3 +16,5 @@ src/*.egg-info
 _trial_temp
 .idea
 *.iml
+doc/_*
+

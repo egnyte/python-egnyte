@@ -2,7 +2,7 @@ Egnyte SDK
 ==========
 
 This is the official Python client library for Egnyte.com Public APIs.
-For overview of the API, go to https://developers.egnyte.com
+For overview of the HTTP API, go to https://developers.egnyte.com
 
 Getting an API key
 ==================
@@ -26,15 +26,13 @@ Examples
 
 .. code-block:: python
 
-    folder = cient.folder("/Shared/new")
-    folder.create(ignore_if_exists=True)
+    folder = client.folder("/Shared/new").create(ignore_if_exists=True)
 
 * delete a folder
 
 .. code-block:: python
 
-    folder = client.folder("/Shared/time to say goodbye")
-    folder.delete()
+    client.folder("/Shared/time to say goodbye").delete()
 
 * get a list of files in a folder, download a file, replace it's contents, add a note
 
@@ -85,13 +83,21 @@ Examples
 
     api.bulk_upload(['/tmp/some directory', '/tmp/some file'], '/Shared/Marketing')
 
+Full documentation
+==================
+
+docs subdirectory contains just the source for the documentation.
+You can read built docs at http://<to be determined>
+
 
 Command line
 ============
 
 If you're using implicit flow, you'll need to provide access token directly.
 If you're using API token with resource flow, you can generate API access token using command line options.
-Check COMMANDS_ for details.
+See the full documentation or install, then use:
+
+    python -m egnyte -h
 
 Dependencies
 ============
@@ -112,7 +118,19 @@ to do so if necessary.
 Running tests
 =============
 
-Check TESTS_
+Tests can be run with nose or trial directly on the egnyte package, or
+from setup.py:
+
+    python setup.py test
+
+or
+
+    python setyp.py nosetests
+
+Integration tests will be skipped unless you create ~/.egnyte/test\_config.json
+You can create this file manually or with following command:
+
+    python -m egnyte -c test\_config.json config create -k -d -l [-p ]
 
 Helping with development
 ========================
@@ -127,5 +145,3 @@ information what you're fixing.
 Please remember to assign copyright of your fixes to Egnyte or make them
 public domain so we can legally merge them.
 
-.. _COMMANDS: https://github.com/egnyte/python-egnyte/blob/master/doc/COMMANDS.rst
-.. _TESTS: https://github.com/egnyte/python-egnyte/blob/master/doc/TESTS.rst

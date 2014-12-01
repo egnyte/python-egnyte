@@ -29,6 +29,7 @@ class EgnyteClient(base.Session):
 
     @property
     def audits(self):
+        """API for Audit Reports"""
         return audits.Audits(self)
 
     @property
@@ -71,7 +72,8 @@ class EgnyteClient(base.Session):
     def impersonate(self, username):
         """
         Start impersonating another user.
-        username: either username or full email address of user to impersonate.
+
+        * username: either username or full email address of user to impersonate.
         """
         self._session.headers['X-Egnyte-Act-As-Email' if '@' in username else 'X-Egnyte-Act-As'] = username
 
@@ -85,9 +87,10 @@ class EgnyteClient(base.Session):
     def bulk_upload(self, paths, target, exclude=None, progress_callbacks=None):
         """
         Transfer many files or directories to Cloud File System.
-        paths - list of local file paths
-        target - Path in CFS to upload to
-        progress_callbacks - Callback object (see ProgressCallbacks)
+
+        * paths - list of local file paths
+        * target - Path in CFS to upload to
+        * progress_callbacks - Callback object (see ProgressCallbacks)
         """
         if not paths:
             return
@@ -155,9 +158,10 @@ class EgnyteClient(base.Session):
     def bulk_download(self, paths, local_dir, overwrite=False, progress_callbacks=None):
         """
         Transfer many files or directories to Cloud File System.
-        paths - list of local file paths
-        target - Path in CFS to upload to
-        progress_callbacks - Callback object (see ProgressCallbacks)
+
+        * paths - list of local file paths
+        * target - Path in CFS to upload to
+        * progress_callbacks - Callback object (see ProgressCallbacks)
         """
         if progress_callbacks is None:
             progress_callbacks = ProgressCallbacks()

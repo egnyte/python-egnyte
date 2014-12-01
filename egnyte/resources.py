@@ -29,16 +29,17 @@ class FileOrFolder(base.Resource):
              expiry_date=None, expiry_clicks=None, add_filename=None):
         """
         Create a link to this.
-        accessibility: Determines who a link is accessible by ('Anyone', 'Password', 'Domain', 'Recipients')
-        send_email: If true, link will be sent via email by Egnyte.
-        recipients: List email addresses of recipients of the link. Only required if send_email is True (List of valid email addresses)
-        message: Personal message to be sent in link email. Only applies if send_email is True (plain text)
-        copy_me: If True, a copy of the link message will be sent to the link creator. Only applies if send_email is True.
-        notify: If True, link creator will be notified via email when link is accessed.
-        link_to_current: If True, link will always refer to current version of file. Only applicable for file links.
-        expiry_date: The expiry date for the link. If expiry_date is specified, expiry_clicks cannot be set (future date as datetime.date or string in YYYY-MM-DD format)
-        expiry_clicks: The number of clicks the link is valid for. If expiry_clicks is specified, expiry_date cannot be set (value must be between 1 - 10, inclusive)
-        add_filename: If True then the filename will be appended to the end of the link. Only applies to file links, not folder links.
+
+        * accessibility: Determines who a link is accessible by ('Anyone', 'Password', 'Domain', 'Recipients')
+        * send_email: If true, link will be sent via email by Egnyte.
+        * recipients: List email addresses of recipients of the link. Only required if send_email is True (List of valid email addresses)
+        * message: Personal message to be sent in link email. Only applies if send_email is True (plain text)
+        * copy_me: If True, a copy of the link message will be sent to the link creator. Only applies if send_email is True.
+        * notify: If True, link creator will be notified via email when link is accessed.
+        * link_to_current: If True, link will always refer to current version of file. Only applicable for file links.
+        * expiry_date: The expiry date for the link. If expiry_date is specified, expiry_clicks cannot be set (future date as datetime.date or string in YYYY-MM-DD format)
+        * expiry_clicks: The number of clicks the link is valid for. If expiry_clicks is specified, expiry_date cannot be set (value must be between 1 - 10, inclusive)
+        * add_filename: If True then the filename will be appended to the end of the link. Only applies to file links, not folder links.
 
         Will return sequence of created Links, one for each recipient.
         """
@@ -156,14 +157,11 @@ class File(FileOrFolder):
         base.Resource.delete(self)
 
     def add_note(self, message):
-        """
-        Add a note to this file.
-        Returns the created Note object.
-        """
+        """Add a note to this file. Returns the created Note object."""
         return self._client.notes.create(self.path, message)
 
     def get_notes(self, **kwargs):
-        """Get notes attached to this file."""
+        """Get notes attached to this file. Returns list of Note objects"""
         return self._client.notes.list(file=self.path, **kwargs)
 
 
@@ -275,15 +273,16 @@ class User(base.Resource):
         """
         Modify this user account.
         Optional parameters (no change if value is None):
-        email: The email address of the user. Any valid email address (e.g. admin@acme.com)
-        familyName: The last name of the user. Any plain text (e.g. John)
-        givenName: The first name of the user. Any plain text (e.g. Smith)
-        active: Whether the user is active or inactive. True or False
-        sendInvite: If set to true when creating a user, an invitation email will be sent (if the user is created in active state). True or False
-        authType: The authentication type for the user. 'ad' (AD), 'sso' (SAML SSO), 'egnyte' (Internal Egnyte)
-        userType: The Egnyte role of the user. 'admin' (Administrator), 'power' (Power User), 'standard' (Standard User)
-        idpUserId: Only required if the user is SSO authenticated and not using default user mapping. Do not specify if user is not SSO authenticated. This is the way the user is identified within the SAML Response from an SSO Identity Provider, i.e. the SAML Subject (e.g. jsmith)
-        userPrincipalName: Do not specify if user is not AD authenticated. Used to bind child authentication policies to a user when using Active Directory authentication in a multi-domain setup (e.g. jmiller@example.com)
+
+        * email: The email address of the user. Any valid email address (e.g. admin@acme.com)
+        * familyName: The last name of the user. Any plain text (e.g. John)
+        * givenName: The first name of the user. Any plain text (e.g. Smith)
+        * active: Whether the user is active or inactive. True or False
+        * sendInvite: If set to true when creating a user, an invitation email will be sent (if the user is created in active state). True or False
+        * authType: The authentication type for the user. 'ad' (AD), 'sso' (SAML SSO), 'egnyte' (Internal Egnyte)
+        * userType: The Egnyte role of the user. 'admin' (Administrator), 'power' (Power User), 'standard' (Standard User)
+        * idpUserId: Only required if the user is SSO authenticated and not using default user mapping. Do not specify if user is not SSO authenticated. This is the way the user is identified within the SAML Response from an SSO Identity Provider, i.e. the SAML Subject (e.g. jsmith)
+        * userPrincipalName: Do not specify if user is not AD authenticated. Used to bind child authentication policies to a user when using Active Directory authentication in a multi-domain setup (e.g. jmiller@example.com)
         """
         url = self._client.get_url(self._url_template, id=self.id)
         name = base.filter_none_values(dict(familyName=familyName, givenName=givenName)) or None
@@ -322,18 +321,19 @@ class Links(base.HasClient):
                ):
         """
         Create links.
-        path:  The absolute path of the destination file or folder.
-        type:  This determines what type of link will be created ('File' or 'Folder')
-        accessibility: Determines who a link is accessible by ('Anyone', 'Password', 'Domain', 'Recipients')
-        send_email: If true, link will be sent via email by Egnyte.
-        recipients: List email addresses of recipients of the link. Only required if send_email is True (List of valid email addresses)
-        message: Personal message to be sent in link email. Only applies if send_email is True (plain text)
-        copy_me: If True, a copy of the link message will be sent to the link creator. Only applies if send_email is True.
-        notify: If True, link creator will be notified via email when link is accessed.
-        link_to_current: If True, link will always refer to current version of file. Only applicable for file links.
-        expiry_date: The expiry date for the link. If expiry_date is specified, expiry_clicks cannot be set (future date as datetime.date or string in YYYY-MM-DD format)
-        expiry_clicks: The number of clicks the link is valid for. If expiry_clicks is specified, expiry_date cannot be set (value must be between 1 - 10, inclusive)
-        add_filename: If True then the filename will be appended to the end of the link. Only applies to file links, not folder links.
+
+        * path:  The absolute path of the destination file or folder.
+        * type:  This determines what type of link will be created ('File' or 'Folder')
+        * accessibility: Determines who a link is accessible by ('Anyone', 'Password', 'Domain', 'Recipients')
+        * send_email: If true, link will be sent via email by Egnyte.
+        * recipients: List email addresses of recipients of the link. Only required if send_email is True (List of valid email addresses)
+        * message: Personal message to be sent in link email. Only applies if send_email is True (plain text)
+        * copy_me: If True, a copy of the link message will be sent to the link creator. Only applies if send_email is True.
+        * notify: If True, link creator will be notified via email when link is accessed.
+        * link_to_current: If True, link will always refer to current version of file. Only applicable for file links.
+        * expiry_date: The expiry date for the link. If expiry_date is specified, expiry_clicks cannot be set (future date as datetime.date or string in YYYY-MM-DD format)
+        * expiry_clicks: The number of clicks the link is valid for. If expiry_clicks is specified, expiry_date cannot be set (value must be between 1 - 10, inclusive)
+        * add_filename: If True then the filename will be appended to the end of the link. Only applies to file links, not folder links.
 
         Will return sequence of created Links, one for each recipient.
         """
@@ -358,14 +358,15 @@ class Links(base.HasClient):
              offset=None, count=None):
         """
         Search links that match following optional conditions:
-        path: List links to this file or folder (Full absolute path of destination file or folder)
-        username: List links created by this user (Any username from your Egnyte account)
-        created_before: List links created before this date (datetime.date, or string in YYYY-MM-DD format)
-        created_after: List links created after this date (datetime.date, or string in YYYY-MM-DD format)
-        type: Links of selected type will be shown ('File' or 'Folder')
-        accessibility: Links of selected accessibility will be shown ('Anyone', 'Password', 'Domain', or 'Recipients')
-        offset: Start at this link, where offset=0 means start with first link.
-        count: Send this number of links. If not specified, all links will be sent.
+
+        * path: List links to this file or folder (Full absolute path of destination file or folder)
+        * username: List links created by this user (Any username from your Egnyte account)
+        * created_before: List links created before this date (datetime.date, or string in YYYY-MM-DD format)
+        * created_after: List links created after this date (datetime.date, or string in YYYY-MM-DD format)
+        * type: Links of selected type will be shown ('File' or 'Folder')
+        * accessibility: Links of selected accessibility will be shown ('Anyone', 'Password', 'Domain', or 'Recipients')
+        * offset: Start at this link, where offset=0 means start with first link.
+        * count: Send this number of links. If not specified, all links will be sent.
 
         Returns a list of Link objects, with additional total_count and offset attributes.
         """
@@ -417,18 +418,19 @@ class Users(base.HasClient):
                userType='power', role=None, idpUserId=None, userPrincipalName=None):
         """
         Create a new user account. Parameters:
-        userName: The Egnyte username for the user. Username must start with a letter or digit. Special characters are not supported (with the exception of periods, hyphens, and underscores).
-        externalId: This is an immutable unique identifier provided by the API consumer. Any plain text (e.g. S-1-5-21-3623811015-3361044348-30300820-1013)
-        email: The email address of the user. Any valid email address (e.g. admin@acme.com)
-        familyName: The last name of the user. Any plain text (e.g. John)
-        givenName: The first name of the user. Any plain text (e.g. Smith)
-        active: Whether the user is active or inactive. True or False
-        sendInvite: If set to true when creating a user, an invitation email will be sent (if the user is created in active state). True or False
-        authType: The authentication type for the user. 'ad' (AD), 'sso' (SAML SSO), 'egnyte' (Internal Egnyte)
-        userType: The type of the user. 'admin' (Administrator), 'power' (Power User), 'standard' (Standard User)
-        role: The role assigned to the user. Only applicable for Power Users. Default or custom role name
-        idpUserId: Only required if the user is SSO authenticated and not using default user mapping. Do not specify if user is not SSO authenticated. This is the way the user is identified within the SAML Response from an SSO Identity Provider, i.e. the SAML Subject (e.g. jsmith)
-        userPrincipalName: Do not specify if user is not AD authenticated. Used to bind child authentication policies to a user when using Active Directory authentication in a multi-domain setup (e.g. jmiller@example.com)
+
+        * userName: The Egnyte username for the user. Username must start with a letter or digit. Special characters are not supported (with the exception of periods, hyphens, and underscores).
+        * externalId: This is an immutable unique identifier provided by the API consumer. Any plain text (e.g. S-1-5-21-3623811015-3361044348-30300820-1013)
+        * email: The email address of the user. Any valid email address (e.g. admin@acme.com)
+        * familyName: The last name of the user. Any plain text (e.g. John)
+        * givenName: The first name of the user. Any plain text (e.g. Smith)
+        * active: Whether the user is active or inactive. True or False
+        * sendInvite: If set to true when creating a user, an invitation email will be sent (if the user is created in active state). True or False
+        * authType: The authentication type for the user. 'ad' (AD), 'sso' (SAML SSO), 'egnyte' (Internal Egnyte)
+        * userType: The type of the user. 'admin' (Administrator), 'power' (Power User), 'standard' (Standard User)
+        * role: The role assigned to the user. Only applicable for Power Users. Default or custom role name
+        * idpUserId: Only required if the user is SSO authenticated and not using default user mapping. Do not specify if user is not SSO authenticated. This is the way the user is identified within the SAML Response from an SSO Identity Provider, i.e. the SAML Subject (e.g. jsmith)
+        * userPrincipalName: Do not specify if user is not AD authenticated. Used to bind child authentication policies to a user when using Active Directory authentication in a multi-domain setup (e.g. jmiller@example.com)
 
         Returns created User object.
         """
@@ -470,8 +472,10 @@ class Notes(base.HasClient):
         """
         Create a new note.
         Parameters:
-        path - path to the file the note is about
-        message - contents of the note
+
+        * path - path to the file the note is about
+        * message - contents of the note
+
         Returns the created Note object.
         """
         url = self._client.get_url(self._url_template)
@@ -482,11 +486,13 @@ class Notes(base.HasClient):
     def list(self, file=None, folder=None, start_time=None, end_time=None):
         """
         List existing notes.
-        Optional filtering params:
-        start_time: Get notes created after start_time (datetime.date or string in 'YYYY-MM-DD' format)
-        file: Get only notes attached to a specific file (path).
-        folder: Get only notes atatched to files in specific folder (path).
-        end_time: Get notes created before end_time (datetime.date or string in 'YYYY-MM-DD' format)
+        Optional filtering parameters:
+
+        * start_time: Get notes created after start_time (datetime.date or string in 'YYYY-MM-DD' format)
+        * file: Get only notes attached to a specific file (path).
+        * folder: Get only notes atatched to files in specific folder (path).
+        * end_time: Get notes created before end_time (datetime.date or string in 'YYYY-MM-DD' format)
+
         Returns list of Note objects, with additional attributes total_result and offset.
         """
         url = self._client.get_url(self._url_template)

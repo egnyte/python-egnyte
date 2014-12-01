@@ -10,9 +10,9 @@ except ImportError:
 with open(os.path.join(os.path.dirname(__file__, "README.rst")), "rt") as f:
     long_description = f.read()
 
-setup(
+args = dict(
     name='egnyte',
-    version='0.4',
+    version='0.4beta',
     author='Vijayendra Bapte, Maciej Szumocki',
     author_email='api-support@egnyte.com',
     license='MIT',
@@ -36,5 +36,12 @@ setup(
         "Operating System :: OS Independent",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
-    test_suite="egnyte"
+    test_suite="egnyte",
+    extras_require={
+        'docs': ['sphinx', 'sphinx-argparse'],
+    },
+    # TODO: add an entrypoint for a console script, or do we stick with 'python -m egnyte'?
 )
+
+if __name__ == '__main__':
+    setup(**args)
