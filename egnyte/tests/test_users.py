@@ -1,3 +1,8 @@
+from __future__ import print_function
+
+
+from unittest.case import skip
+
 from egnyte.tests.config import IntegrationCase
 
 
@@ -6,6 +11,8 @@ class TestUserInfo(IntegrationCase):
         data = self.client.user_info
         self.assertEqual(data["username"], self.config['login'], "Username received from API does not match one in config file")
 
+
+class TestUsers(IntegrationCase):
     def test_create_and_search(self):
         users = self.client.users
         user = users.create(userName="test_user_1", externalId="test_user_1", email="test_user_1@example.com",
@@ -25,3 +32,19 @@ class TestUserInfo(IntegrationCase):
 
         finally:
             user.delete()
+
+class TestGroups(IntegrationCase):
+    groupName = "python integration test group"
+
+    @skip("Not deployed yet")
+    def test_create(self):
+        user = self.client.users.by_username(self.config['login'])
+        groups = self.client.groups
+
+        group1 = groups.create(self.groupName, [user])
+        try:
+            group2 = groups.by_displayName(self.groupName)
+            self.assertEqual(group1, group1)
+            print(group2.members)
+        finally:
+            group1.delete()

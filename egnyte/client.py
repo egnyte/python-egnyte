@@ -38,14 +38,19 @@ class EgnyteClient(base.Session):
         return resources.Notes(self)
 
     @property
+    def groups(self):
+        """API for Group Management"""
+        return resources.Groups(self)
+
+    @property
     def settings(self):
         """Domain settings."""
         if not hasattr(self, '_cached_settings'):
             result  = {}
             urls = (
-                ('user', "pubapi/v2/users/settings"),
-                ('link', "pubapi/v1/links/settings"),
-                ('folder', "pubapi/v1/fs/settings"),
+                ('users', "pubapi/v2/users/settings"),
+                ('links', "pubapi/v1/links/settings"),
+                ('file_system', "pubapi/v1/fs/settings"),
                 ('audit', "pubapi/v1/audit/settings"),
             )
             for name, url in urls:

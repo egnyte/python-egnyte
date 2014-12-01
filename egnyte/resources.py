@@ -309,6 +309,15 @@ class Note(base.Resource):
         """Get File this note is attached to."""
         return self._client.file(self.file_path)
 
+class Group(base.Resource):
+    """Group of users."""
+    _url_template = "pubapi/v2/groups/%(id)s"
+    _lazy_attributes = {'displayName', 'members'}
+
+    def delete(self):
+        """Delete this Group"""
+        base.Resource.delete(self)
+
 
 class Links(base.HasClient):
     """Link management API"""
@@ -500,4 +509,58 @@ class Notes(base.HasClient):
                                               end_time=base.date_format(end_time)))
         json = exc.default.check_json_response(self._client.GET(url, params=params))
         return base.ResultList((Note(self._client, **d) for d in json.pop('notes', ())), json['total_results'], json['offset'])
+
+
+class Groups(base.HasClient):
+    """
+    Group Management API
+    """
+    _url_template = "pubapi/v2/groups"
+
+    def list(self, displayName=None, startIndex=None, count=None):
+        """
+        List existing groups.
+        Optional filtering parameters:
+        
+        * displayName: Filter by name of the group. This may contain '*' wildcards at beginning for prefix search or both at beginning and end for contains search.
+
+        Returns list of Group objects, with additional attributes total_result and offset
+        """
+        params = base.filter_none_values(dict(startIndex=startIndex, count=count))
+        if displayName:
+            if displayName.startswith('*'):
+                op = 'co' if displayName.endswith('*') else 'sw'
+            else:
+                op = 'eq'
+            params['filter'] = [u'displayName %s "%s"' % (op, displayName.strip('*'))]
+        url = self._client.get_url(self._url_template)
+        json = exc.default.check_json_response(self._client.GET(url, params=params))
+        return base.ResultList((Group(self._client, **d) for d in json.pop('resources', ())), json['totalResults'], json['startIndex'] - 1)
+
+    def create(self, displayName, members=None):
+        """
+        Create a new Group. Parameters:
+
+        * displayName: Name of the group (string). Required
+        * members: List of members to be added to the new group (user ids or User objects). Optional.
+
+        Returns created Group object.
+        """
+        url = self._client.get_url(self._url_template)
+        data = dict(displayName=displayName)
+        if members is not None:
+            data['members'] = [dict(value=x.id if isinstance(x, User) else x) for x in members]
+        json = exc.created.check_json_response(self._client.POST(url, data))
+        return Group(self._client, **json)
+
+    def get(self, id):
+        """Get a Group object by id. Does not check if Group exists."""
+        return Group(self._client, id=id)
+
+    def by_displayName(self, displayName):
+        """Get a Group object by displayName. Returns None if Group does not exist"""
+        try:
+            return self.list(displayName=displayName)[0]
+        except LookupError:
+            pass
 
