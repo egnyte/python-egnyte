@@ -16,6 +16,7 @@ Examples
 
 * create a client object
 
+
 .. code-block:: python
 
     from egnyte import EgnyteClient
@@ -87,7 +88,7 @@ Full documentation
 ==================
 
 docs subdirectory contains just the source for the documentation.
-You can read built docs at http://<to be determined>
+You can read built docs at http://egnyte.github.io/python-egnyte-docs/
 
 
 Command line
