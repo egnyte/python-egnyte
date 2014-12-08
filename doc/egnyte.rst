@@ -9,6 +9,15 @@ egnyte.audits module
     :undoc-members:
     :show-inheritance:
 
+egnyte.base module
+--------------------
+
+.. automodule:: egnyte.base
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
 egnyte.client module
 --------------------
 

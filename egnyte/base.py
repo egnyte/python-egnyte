@@ -264,13 +264,13 @@ class FileDownload(object):
         if not self.closed:
             self.response.close()
 
-    def read(self, amt=None, decode_content=True):
+    def read(self, size=None, decode_content=True):
         """
         Wrap urllib3 response.
-        amt - How much of the content to read. If specified, caching is skipped because it doesn't make sense to cache partial content as the full response.
+        size - How much of the content to read. If specified, caching is skipped because it doesn't make sense to cache partial content as the full response.
         decode_content - If True, will attempt to decode the body based on the 'content-encoding' header.
         """
-        return self.response.raw.read(amt, decode_content)
+        return self.response.raw.read(size, decode_content)
 
     def __iter__(self, **kwargs):
         """

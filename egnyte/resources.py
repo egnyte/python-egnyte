@@ -228,7 +228,7 @@ class Folder(FileOrFolder):
 
     def get_effective_permissions(self, username):
         """
-        Get effective permissions to this folder for a specific user.
+        Get effective permissions (both direct, and granted by membership in groups) to this folder for a specific user.
         username: name of user (string)
         Returns one of 'Owner', 'Full', 'Editor', 'Viewer'
         """
@@ -361,6 +361,7 @@ class Links(base.HasClient):
         return result
 
     def get(self, id):
+        """Get a Link object by it's id"""
         return Link(self._client, id=id)
 
     def list(self, path=None, username=None, created_before=None, created_after=None, type=None, accessibility=None,
