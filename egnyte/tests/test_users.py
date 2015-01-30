@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 
-from unittest.case import skip
+from unittest.case import expectedFailure
 
 from egnyte.tests.config import IntegrationCase
 
@@ -36,7 +36,7 @@ class TestUsers(IntegrationCase):
 class TestGroups(IntegrationCase):
     groupName = "python integration test group"
 
-    @skip("Not deployed yet")
+    @expectedFailure
     def test_create(self):
         user = self.client.users.by_username(self.config['login'])
         groups = self.client.groups
