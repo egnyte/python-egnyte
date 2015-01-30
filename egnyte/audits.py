@@ -85,7 +85,7 @@ class Audits(base.HasClient):
         return AuditReport(self._client, id=self._job_id(r), format=format, type='permissions')
 
     def get(self, id):
-        """Get a previously generated report by it's id"""
+        """Get a previously generated report by its id"""
         return AuditReport(self._client, id=id)
 
 
@@ -109,7 +109,7 @@ class AuditReport(base.Resource):
     def wait(self, check_time=5.0):
         """
         Block until report is ready.
-        Propably only useful for command line applications.
+        Probably only useful for command line applications.
         """
         import time
         while not self.is_ready():
