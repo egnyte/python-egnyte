@@ -1,8 +1,5 @@
 from __future__ import print_function
 
-
-from unittest.case import expectedFailure
-
 from egnyte.tests.config import IntegrationCase
 
 
@@ -36,7 +33,6 @@ class TestUsers(IntegrationCase):
 class TestGroups(IntegrationCase):
     groupName = "python integration test group"
 
-    @expectedFailure
     def test_create(self):
         user = self.client.users.by_username(self.config['login'])
         groups = self.client.groups
@@ -45,6 +41,6 @@ class TestGroups(IntegrationCase):
         try:
             group2 = groups.by_displayName(self.groupName)
             self.assertEqual(group1, group1)
-            print(group2.members)
+            self.assertEqual(group2.members[0]['username'], self.config['login'])
         finally:
             group1.delete()

@@ -175,7 +175,7 @@ class Commands(object):
 
     def get_access_token(self):
         config = self.require_password()
-        return base.get_access_token(config).get_access_token()
+        return base.get_access_token(config)
 
     def merge_config(self):
         """Merge loaded config with command line params"""
