@@ -21,7 +21,7 @@ JSON_HEADERS = {'content-type': 'application/json'}
 
 class Session(object):
     """
-    Provides persistent HTTPS connections to Egnyte API
+    Provides persistent HTTPS connections to the Egnyte API
     """
     time_between_requests = None
     last_request_time = None
@@ -113,7 +113,7 @@ class Resource(object):
             self._url = self._client.get_url(self._url_template, **kwargs)
 
     def __getattr__(self, name):
-        """If attribute is in _lazyAtrributes yet we don't have it's value yet, fetch attributes from service."""
+        """If attribute is in _lazyAtrributes but we don't have it's value yet, fetch attributes from service."""
         if name in self._lazy_attributes:
             if name not in self.__dict__:
                 self._fetch_attributes()
@@ -168,7 +168,7 @@ def get_access_token(config):
 
 
 class _FileChunk(object):
-    """Wrapped for chunk of the file that also calculates SHA256 checksum while file is read"""
+    """Wrapper for chunk of the file that also calculates SHA512 checksum while file is read"""
 
     def __init__(self, fp, start, size):
         self.fp = fp
@@ -227,8 +227,8 @@ def encode_path(path):
 
 class FileDownload(object):
     """
-    Provides file length and other metadata.
-    Delegates reads to underlying requests response.
+    Provides the file length and other metadata.
+    Delegates reads to underlying request's response.
     """
 
     def __init__(self, response, file):
@@ -328,7 +328,7 @@ def filter_none_values(dict):
 
 class ResultList(list):
     """
-    List with additional attributes, that represents a part of list of objects that exits in the cloud.
+    List with additional attributes representing a partial list of objects that exist in the cloud.
     total_count: Count of all objects that exist.
     offset: Starting index of this slice of results.
     """

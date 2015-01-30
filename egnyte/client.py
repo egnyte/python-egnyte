@@ -18,7 +18,7 @@ class EgnyteClient(base.Session):
     @property
     def user_info(self):
         """
-        Information about user that this API access token belongs to.
+        Information about user associated with this API access token.
         """
         return exc.default.check_json_response(self.GET(self.get_url("pubapi/v1/userinfo")))
 

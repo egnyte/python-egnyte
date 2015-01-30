@@ -17,28 +17,28 @@ class FileOrFolder(base.Resource):
         return self.__class__(self._client, path=destination)
 
     def copy(self, destination):
-        """Copy this to another path. Destination path should have all segments (including last one)."""
+        """Copy this to another path. Destination path should have all segments (including the last one)."""
         return self._action('copy', destination)
 
     def move(self, destination):
-        """Move this to another path. Destination path should have all segments (including last one)."""
+        """Move this to another path. Destination path should have all segments (including the last one)."""
         return self._action('move', destination)
 
     def link(self, accessibility, recipients=None, send_email=None, message=None,
              copy_me=None, notify=None, link_to_current=None,
              expiry_date=None, expiry_clicks=None, add_filename=None):
         """
-        Create a link to this.
+        Create a link.
 
-        * accessibility: Determines who a link is accessible by ('Anyone', 'Password', 'Domain', 'Recipients')
-        * send_email: If true, link will be sent via email by Egnyte.
-        * recipients: List email addresses of recipients of the link. Only required if send_email is True (List of valid email addresses)
+        * accessibility: Determines how the link can be accessed ('Anyone', 'Password', 'Domain', 'Recipients')
+        * send_email: If true, Egnyte will send the link by email.
+        * recipients: List email addresses for people who should receive the link. Only required if send_email is True (List of valid email addresses)
         * message: Personal message to be sent in link email. Only applies if send_email is True (plain text)
         * copy_me: If True, a copy of the link message will be sent to the link creator. Only applies if send_email is True.
         * notify: If True, link creator will be notified via email when link is accessed.
         * link_to_current: If True, link will always refer to current version of file. Only applicable for file links.
         * expiry_date: The expiry date for the link. If expiry_date is specified, expiry_clicks cannot be set (future date as datetime.date or string in YYYY-MM-DD format)
-        * expiry_clicks: The number of clicks the link is valid for. If expiry_clicks is specified, expiry_date cannot be set (value must be between 1 - 10, inclusive)
+        * expiry_clicks: The number of times the link can be clicked before it stops working. If expiry_clicks is specified, expiry_date cannot be set (value must be between 1 - 10, inclusive)
         * add_filename: If True then the filename will be appended to the end of the link. Only applies to file links, not folder links.
 
         Will return sequence of created Links, one for each recipient.
@@ -67,7 +67,7 @@ class FileOrFolder(base.Resource):
 class File(FileOrFolder):
     """
     Wrapper for a file in the cloud.
-    Does not have to exist - can represent a new file to be uploaded.
+    Does not have to exist - this can represent a new file to be uploaded.
     path - file path
     """
     _upload_chunk_size = 100 * (1024 * 1024)  # 100 MB
@@ -81,8 +81,7 @@ class File(FileOrFolder):
     def upload(self, fp, size=None, progress_callback=None):
         """
         Upload file contents.
-        fp can be any file-like object, but if you don't specify it's size in
-        advance it must support tell and seek methods.
+        fp can be any file-like object, but if you don't specify it's size in advance it must support tell and seek methods.
         Progress callback is optional - if provided, it should match signature of ProgressCallbacks.upload_progress
         """
         if isinstance(fp, six.binary_type):
@@ -112,8 +111,7 @@ class File(FileOrFolder):
         """
         Download file contents.
         Returns a FileDownload.
-        Optional range is 2 integer sequence (start offset, end offset) used to download
-        only part of the file.
+        Optional range is 2 integer sequence (start offset, end offset) used to download only part of the file.
         """
         url = self._client.get_url(self._url_template_content, path=self.path)
         if download_range is None:
@@ -257,7 +255,7 @@ class User(base.Resource):
     """
     Wrapper for a User.
     Warning: attribute names in this class use camelCase instead of underscores.
-    Name is dictionary with 2 keys: givenName and lastName.
+    Name is a dictionary with 2 keys: givenName and lastName.
     """
     _url_template = "pubapi/v2/users/%(id)s"
     _url_template_effective_permissions = "pubabi/v1/perms/user/%(userName)s"
@@ -306,7 +304,7 @@ class Note(base.Resource):
         base.Resource.delete(self)
 
     def get_file(self):
-        """Get File this note is attached to."""
+        """Get the file to which this note is attached."""
         return self._client.file(self.file_path)
 
 class Group(base.Resource):
@@ -334,7 +332,7 @@ class Links(base.HasClient):
         * path:  The absolute path of the destination file or folder.
         * type:  This determines what type of link will be created ('File' or 'Folder')
         * accessibility: Determines who a link is accessible by ('Anyone', 'Password', 'Domain', 'Recipients')
-        * send_email: If true, link will be sent via email by Egnyte.
+        * send_email: If True, the link will be sent via email by Egnyte.
         * recipients: List email addresses of recipients of the link. Only required if send_email is True (List of valid email addresses)
         * message: Personal message to be sent in link email. Only applies if send_email is True (plain text)
         * copy_me: If True, a copy of the link message will be sent to the link creator. Only applies if send_email is True.
@@ -344,7 +342,7 @@ class Links(base.HasClient):
         * expiry_clicks: The number of clicks the link is valid for. If expiry_clicks is specified, expiry_date cannot be set (value must be between 1 - 10, inclusive)
         * add_filename: If True then the filename will be appended to the end of the link. Only applies to file links, not folder links.
 
-        Will return sequence of created Links, one for each recipient.
+        Will return a sequence of created Links, one for each recipient.
         """
         url = self._client.get_url(self._url_template)
         data = base.filter_none_values(dict(path=path, type=type, accessibility=accessibility, send_email=send_email,

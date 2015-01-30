@@ -1,41 +1,51 @@
 Egnyte SDK
 ==========
 
-This is the official Python client library for Egnyte.com Public APIs.
+This is the official Python client library for Egnyte's Public APIs.
 For overview of the HTTP API, go to https://developers.egnyte.com
 
 Getting an API key
 ==================
 
 Register on https://developers.egnyte.com/member/register to get API key
-for your Egnyte account. This key is required to generate Egnyte OAuth
+for your Egnyte account. This key is required to generate an Egnyte OAuth
 token.
 
 Examples
 ========
 
-* create a client object
+* Include this library
 
+.. code-block::python
+
+    import egnyte
+
+* Generate an access token
+
+.. code-block::python
+
+    egnyte.base.get_access_token({"api_key":"cba97f3apst9eqzdr5hskggx", "login":"test", "password":"password", "grant_type":"password", "domain":"apidemo"})
+
+* Create a client object
 
 .. code-block:: python
 
-    from egnyte import EgnyteClient
-    client = EgnyteClient({"domain": "<your domain here>.egnyte.com",
-        "access_token": "<your access token here"})
+    client = egnyte.EgnyteClient({"domain": "apidemo.egnyte.com",
+        "access_token": "68zc95e3xv954u6k3hbnma3q"})
 
-* create a folder
+* Create a folder
 
 .. code-block:: python
 
     folder = client.folder("/Shared/new").create(ignore_if_exists=True)
 
-* delete a folder
+* Delete a folder
 
 .. code-block:: python
 
     client.folder("/Shared/time to say goodbye").delete()
 
-* get a list of files in a folder, download a file, replace it's contents, add a note
+* Get a list of files in a folder, download a file, replace it's contents, add a note
 
 .. code-block:: python
 
@@ -48,7 +58,7 @@ Examples
         file_obj.upload(data.replace(b"foo", b"bar"))
         file_obj.add_note("all occurrences of 'foo' replaced by 'bar'!")
 
-* get a list of files in a subfolders
+* Get a list of files in a subfolders
 
 .. code-block:: python
 
@@ -57,7 +67,7 @@ Examples
     for folder_obj in folder.folders:
         do_something(folder_obj)
 
-* upload a new file from local file
+* Upload a new file from local file
 
 .. code-block:: python
 
@@ -65,20 +75,20 @@ Examples
     with open("local path", "rb") as fp:
         file_obj.upload(fp)
 
-* delete a file
+* Delete a file
 
 .. code-block:: python
 
     file_obj.delete()
 
-* do a recursive download
+* Do a recursive download
 
 .. code-block:: python
 
     client.bulk_download(['/Shared/a dir', '/Shared/another dir'],
         '/home/smeagol/', overwrite=True)
 
-* do a recursive upload
+* Do a recursive upload
 
 .. code-block:: python
 
@@ -87,8 +97,8 @@ Examples
 Full documentation
 ==================
 
-docs subdirectory contains just the source for the documentation.
-You can read built docs at http://egnyte.github.io/python-egnyte-docs/
+The docs subdirectory contains just the source for the documentation.
+You can read the documentation at http://egnyte.github.io/python-egnyte-docs/
 
 
 Command line
@@ -126,7 +136,7 @@ from setup.py:
 
 or
 
-    python setyp.py nosetests
+    python setup.py nosetests
 
 Integration tests will be skipped unless you create ~/.egnyte/test\_config.json
 You can create this file manually or with following command:
@@ -145,4 +155,3 @@ information what you're fixing.
 
 Please remember to assign copyright of your fixes to Egnyte or make them
 public domain so we can legally merge them.
-
