@@ -76,7 +76,7 @@ class File(FileOrFolder):
     _lazy_attributes = {'num_versions', 'name', 'checksum', 'last_modified', 'entry_id',
                         'uploaded_by', 'size', 'is_folder'}
     _url_template_content = "pubapi/v1/fs-content%(path)s"
-    _url_template_content_chunked = "pubapi/v1/fs-content-chunked%(filepath)s"
+    _url_template_content_chunked = "pubapi/v1/fs-content-chunked%(path)s"
 
     def upload(self, fp, size=None, progress_callback=None):
         """
@@ -501,7 +501,7 @@ class Notes(base.HasClient):
         * folder: Get only notes atatched to files in specific folder (path).
         * end_time: Get notes created before end_time (datetime.date or string in 'YYYY-MM-DD' format)
 
-        Returns list of Note objects, with additional attributes total_result and offset.
+        Returns list of Note objects, with additional attributes total_count and offset.
         """
         url = self._client.get_url(self._url_template)
         params = base.filter_none_values(dict(file=file, folder=folder, start_time=base.date_format(start_time),
@@ -563,3 +563,52 @@ class Groups(base.HasClient):
         except LookupError:
             pass
 
+class SearchMatch(base.HasClient):
+    """
+    Single match from search results.
+    Attributes for a file match:
+    
+    * name The name of the file.
+    * path The path to the file in Egnyte.
+    * type The MIME type of the file.
+    * size The size of the file in bytes.
+    * snippet A plain text snippet of the text containing the matched content.
+    * snippet_html An HTML formatted snippet of the text containing the matched content.
+    * entry_id A GUID for tha particular instance of a file.
+    * last_modified The ISO-8601 formatted timestamp representing the last modified date of the file.
+    * uploaded_by The formatted name of the user who uploaded the file.
+    * uploaded_by_username The username of the user who uploaded the file.
+    * num_versions The number of versions of the file available.
+    * is_folder A boolean value stating if the object is a file or folder. Please note that, currently, this API only returns file objects.
+    """
+
+    def file(self):
+        """Get File object that correspons to this search match"""
+        if not self.is_folder:
+            return File(self._client, name=self.name, path=self.path, is_folder=self.is_folder, num_versions=self.num_versions,
+                        entry_id=self.entry.id, uploaded_by=self.uploaded_by, size=self.size, last_modified=self.last_modified)
+
+
+class Search(base.HasClient):
+    """Search API"""
+    _url_template = "pubapi/v1/search"
+
+    def files(self, query, offset=None, count=None, folder=None, modified_before=None, modified_after=None):
+        """
+        Search for files.
+        Parameters:
+
+        * query The search string you want to find.
+        * offset The 0-based index of the initial record being requested (Integer >= 0). No
+        * count The number of entries per page (min 1, max 100) No
+        * folder Limit the result set to only items contained in the specified folder. No
+        * modified_before Limit to results before the specified ISO-8601 timestamp. No
+        * modified_after Limit to results after the specified ISO-8601 timestamp. No
+
+        Returns list of SearchMatch objects, with additional attributes total_count and offset.
+        """
+        url = self._client.get_url(self._url_template)
+        params = base.filter_none_values(dict(query=query, offset=offset, count=count, folder=folder, modified_after=modified_after,
+                                              modified_before=modified_before))
+        json = exc.default.check_json_response(self._client.GET(url, params=params))
+        return base.ResultList((SearchMatch(self._client, **d) for d in json.get('resources', ())), json['total_count'], json['offset'])

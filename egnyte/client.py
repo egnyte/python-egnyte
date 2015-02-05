@@ -43,6 +43,11 @@ class EgnyteClient(base.Session):
         return resources.Groups(self)
 
     @property
+    def search(self):
+        """API for Search"""
+        return resources.Search(self)
+
+    @property
     def settings(self):
         """Domain settings."""
         if not hasattr(self, '_cached_settings'):
