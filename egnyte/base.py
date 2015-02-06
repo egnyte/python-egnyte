@@ -139,7 +139,7 @@ class Resource(object):
         self._fetch_attributes()
 
     def __str__(self):
-        return "<%s: %s >" % (self.__class__.__name__, self._url)
+        return "<%s: %s {%s} >" % (self.__class__.__name__, self._url, ", ".join(["%s: %r" % (k, v) for (k, v) in sorted(self.__dict__.items()) if not k.startswith('_')]))
 
     __repr__ = __str__
 
