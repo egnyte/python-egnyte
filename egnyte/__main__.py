@@ -114,8 +114,18 @@ def create_main_parser():
     parser_settings = subparsers.add_parser('settings', help='show domain settings', **parser_kwargs)
     parser_settings.set_defaults(command="settings")
 
+    parser_search = subparsers.add_parser('search', help='search for files', **parser_kwargs)
+    parser_search.set_defaults(command="search")
+    parser_search.add_argument('query', help='Search query')
+    parser_search.add_argument('--mtime_from', help="Minimim modification date", default=None)
+    parser_search.add_argument('--mtime_to', help="Maximum modification date", default=None)
+    parser_search.add_argument('--folder', help="Limit search to a specified folder", default=None)
+
+
     return main
 
+def to_json(obj):
+    return {k:v for (k, v) in obj.__dict__.items() if not k.startswith('_')}
 
 class Commands(object):
     _config = None
@@ -193,7 +203,7 @@ class Commands(object):
             return config
 
     def print_json(self, obj):
-        print(json.dumps(obj, indent=2, sort_keys=True))
+        print(json.dumps(obj, indent=2, sort_keys=True, default=to_json))
 
     def cmd_config_show(self):
         self.print_json(self.config)
@@ -219,6 +229,12 @@ class Commands(object):
         api = self.get_client()
         info = api.user_info()
         print("Connection successful for user %s" % (info['username'],))
+
+    def cmd_search(self):
+        api = self.get_client()
+        results = api.search.files(self.args.query, modified_before=self.args.mtime_to, modified_after=self.args.mtime_from, folder=self.args.folder)
+        self.print_json(results)
+
 
     def common_audit_args(self):
         format = self.args.format

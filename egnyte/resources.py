@@ -583,32 +583,38 @@ class SearchMatch(base.HasClient):
     """
 
     def file(self):
-        """Get File object that correspons to this search match"""
+        """Get File object that correspons to this search match, or None if found resource is not a File"""
         if not self.is_folder:
             return File(self._client, name=self.name, path=self.path, is_folder=self.is_folder, num_versions=self.num_versions,
-                        entry_id=self.entry.id, uploaded_by=self.uploaded_by, size=self.size, last_modified=self.last_modified)
+                        entry_id=self.entry_id, uploaded_by=self.uploaded_by, size=self.size, last_modified=self.last_modified)
 
 
 class Search(base.HasClient):
     """Search API"""
     _url_template = "pubapi/v1/search"
 
-    def files(self, query, offset=None, count=None, folder=None, modified_before=None, modified_after=None):
+    def files(self, query, offset=None, count=None, folder=None, modified_after=None, modified_before=None):
         """
         Search for files.
         Parameters:
 
-        * query The search string you want to find.
-        * offset The 0-based index of the initial record being requested (Integer >= 0). No
-        * count The number of entries per page (min 1, max 100) No
-        * folder Limit the result set to only items contained in the specified folder. No
-        * modified_before Limit to results before the specified ISO-8601 timestamp. No
-        * modified_after Limit to results after the specified ISO-8601 timestamp. No
+        * query The search string you want to find. * is supported as a postfix wildcard, AND and OR as bool operations and double quotes for phrase search.
+        * offset The 0-based index of the initial record being requested (Integer >= 0).
+        * count The number of entries per page (min 1, max 100)
+        * folder Limit the result set to only items contained in the specified folder.
+        * modified_before Limit to results before the specified ISO-8601 timestamp (datetime.date object or string).
+        * modified_after Limit to results after the specified ISO-8601 timestamp (datetime.date object or string).
 
         Returns list of SearchMatch objects, with additional attributes total_count and offset.
         """
         url = self._client.get_url(self._url_template)
-        params = base.filter_none_values(dict(query=query, offset=offset, count=count, folder=folder, modified_after=modified_after,
-                                              modified_before=modified_before))
+        params = base.filter_none_values(dict(
+            query=query,
+            offset=offset,
+            count=count,
+            folder=folder,
+            modified_after=base.date_format(modified_after),
+            modified_before=base.date_format(modified_before))
+        )
         json = exc.default.check_json_response(self._client.GET(url, params=params))
-        return base.ResultList((SearchMatch(self._client, **d) for d in json.get('resources', ())), json['total_count'], json['offset'])
+        return base.ResultList((SearchMatch(self._client, **d) for d in json.get('results', ())), json['total_count'], json['offset'])
