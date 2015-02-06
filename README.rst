@@ -92,7 +92,15 @@ Examples
 
 .. code-block:: python
 
-    api.bulk_upload(['/tmp/some directory', '/tmp/some file'], '/Shared/Marketing')
+    client.bulk_upload(['/tmp/some directory', '/tmp/some file'], '/Shared/Marketing')
+
+* Search for files
+
+.. code-block:: python
+
+    import datetime
+    results = api.search.files('"some text" OR "other text"', folder='/Shared', modified_after=datetime.date(2015, 1, 15))
+
 
 Full documentation
 ==================
