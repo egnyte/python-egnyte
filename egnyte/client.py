@@ -5,7 +5,7 @@ import os
 import os.path
 import shutil
 
-from egnyte import exc, base, resources, audits
+from egnyte import exc, base, resources, audits, events
 
 
 class EgnyteClient(base.Session):
@@ -46,6 +46,11 @@ class EgnyteClient(base.Session):
     def search(self):
         """API for Search"""
         return resources.Search(self)
+
+    @property
+    def events(self):
+        """API for events"""
+        return events.Events(self)
 
     @property
     def settings(self):

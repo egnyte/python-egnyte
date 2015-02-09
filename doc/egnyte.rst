@@ -42,6 +42,14 @@ egnyte.exc module
     :undoc-members:
     :show-inheritance:
 
+egnyte.events module
+-----------------------
+
+.. automodule:: egnyte.events
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 egnyte.resources module
 -----------------------
 

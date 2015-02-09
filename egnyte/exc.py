@@ -87,7 +87,6 @@ class FileSizeExceedsLimit(EgnyteError):
 class ChecksumError(EgnyteError):
     """Checksum of the uploaded file is different than checksum calculated locally - file was corrupted during transfer."""
 
-
 def extract_errors(data):
     """
     Try to extract useful information from inconsistent error data structures.
@@ -164,6 +163,7 @@ class ErrorMapping(dict):
             except Exception:
                 errors.append({"http response": response.text})
             errors.append({"http status": response.status_code})
+            errors.append({"headers": dict(response.headers)})
             if not self.ignore_error(errors):
                 raise error_type(*errors)
         return response
@@ -171,7 +171,7 @@ class ErrorMapping(dict):
     def ignore_error(self, errors):
         errors = recursive_tuple(errors[1:])
         if errors and self.ignored_errors:
-            result = any((errors == ignored) for ignored in self.ignored_errors)
+            result = any((errors[:len(ignored)] == ignored) for ignored in self.ignored_errors)
             return result
 
     def check_json_response(self, response, *ok_statuses):
@@ -180,7 +180,10 @@ class ErrorMapping(dict):
         try to raise a specific EgnyteError subclass if not
         """
         try:
-            return self.check_response(response, *ok_statuses).json()
+            r = self.check_response(response, *ok_statuses)
+            if r.status_code == http_client.NO_CONTENT:
+                return None
+            return r.json()
         except ValueError:
             raise JsonParseError({"http response": response.text})
 
@@ -192,6 +195,7 @@ default = ErrorMapping()
 partial = ErrorMapping(ok_statuses={http_client.PARTIAL_CONTENT})
 accepted = ErrorMapping(ok_statuses={http_client.ACCEPTED})
 created = ErrorMapping(ok_statuses={http_client.CREATED})
+no_content_ok = ErrorMapping(ok_statuses={http_client.OK, http_client.NO_CONTENT})
 created_ignore_existing = ErrorMapping(ok_statuses=(http_client.CREATED,), ignored_errors = [
     (u'Folder already exists at this location', {'http status': 403})
 ])
