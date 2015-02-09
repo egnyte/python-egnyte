@@ -101,6 +101,19 @@ Examples
     import datetime
     results = api.search.files('"some text" OR "other text"', folder='/Shared', modified_after=datetime.date(2015, 1, 15))
 
+* Get and process events from server
+
+.. code-block:: python
+
+    events = api.events.filter(folder='/Shared', suppress='user')
+    old_events = events.list(events.latest_event_id - 10, count = 10) # get events in batches
+    future_events = iter(events)
+    for event in future_events: # polls server continously, iterator over single events, iterator will never end
+        do_something(event)
+        if condition(event):
+            break
+
+
 
 Full documentation
 ==================

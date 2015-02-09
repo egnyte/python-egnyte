@@ -95,7 +95,7 @@ def create_main_parser():
     parser_audit_permissions.add_argument('--users', required=False, default=None, help='Users to report on (comma separated list)')
     parser_audit_permissions.add_argument('--groups', required=False, default=None, help='Groups to report on (comma separated list)')
 
-    parser_audit_get.add_argument('--id', required=True, help="Id of the report")
+    parser_audit_get.add_argument('--id', type=int, required=True, help="Id of the report")
 
     parser_upload = subparsers.add_parser('upload', help='send files to Egnyte', **parser_kwargs)
     parser_upload.set_defaults(command="upload")
@@ -120,6 +120,17 @@ def create_main_parser():
     parser_search.add_argument('--mtime_from', help="Minimim modification date", default=None)
     parser_search.add_argument('--mtime_to', help="Maximum modification date", default=None)
     parser_search.add_argument('--folder', help="Limit search to a specified folder", default=None)
+
+    parser_events = subparsers.add_parser('events', help='show events from the domain', **parser_kwargs)
+    parser_events.set_defaults(command="events")
+    parser_events.add_argument('--start', type=int, help="Starting event id. Default or 0 - last seen event. Negative numbers are counter backwards from last event", default=None)
+    parser_events.add_argument('--stop', type=int, help="Stop event id. Default - poll indefinitely. 0 means last event. Negative numbers are counter backwards from last event", default=None)
+    parser_events.add_argument('--type', action='append', help="Limit to events of specific type", default=None)
+    parser_events.add_argument('--folder', help="Limit to events in specific folder and it's subfolders", default=None)
+    parser_events.add_argument('--suppress', help="Skip events caused by this app or user. Valid values: app, user.", default=None)
+
+
+
 
 
     return main
@@ -326,6 +337,26 @@ class Commands(object):
 
     def cmd_settings(self):
         self.print_json(self.get_client().settings)
+
+    def cmd_events(self):
+        start = self.args.start
+        stop = self.args.stop
+        events = self.get_client().events
+        if start is None:
+            start = events.latest_event_id
+        elif start <= 0:
+            start = events.latest_event_id + start
+        if stop is not None and stop <= 0:
+            stop = events.latest_event_id + stop
+        events = events.filter(start_id = start, suppress=self.args.suppress, folder=self.args.folder, types=self.args.type or None)
+        try:
+            for event in events:
+                self.print_json(event)
+                print()
+                if stop is not None and event.id >= stop:
+                    break
+        except KeyboardInterrupt:
+            pass
 
 
 class VerboseCallbacks(client.ProgressCallbacks):

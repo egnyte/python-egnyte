@@ -48,9 +48,18 @@ class Session(object):
                     time.sleep(self.time_between_requests - since)
             self.last_request_time = time.time()
 
+    def _retry(self, func, *args, **kwargs):
+        while True:
+            response = func(*args, **kwargs)
+            if response.headers.get('x-mashery-error-code') == 'ERR_403_DEVELOPER_OVER_QPS':
+                retry_after = float(response.headers.get('retry-after', '1'))
+                time.sleep(retry_after)
+            else:
+                return response
+
     def GET(self, url, **kwargs):
         self._respect_limits()
-        return self._session.get(url, allow_redirects=False, **kwargs)
+        return self._retry(self._session.get, url, allow_redirects=False, **kwargs)
 
     def POST(self, url, json_data=None, **kwargs):
         self._respect_limits()
@@ -62,7 +71,7 @@ class Session(object):
             data = json.dumps(json_data)
         if 'headers' in kwargs:
             headers.update(kwargs.pop('headers'))
-        return self._session.post(url, data=data, headers=headers, **kwargs)
+        return self._retry(self._session.post, url, data=data, headers=headers, **kwargs)
 
     def PATCH(self, url, json_data=None, **kwargs):
         self._respect_limits()
@@ -74,11 +83,11 @@ class Session(object):
             data = json.dumps(json_data)
         if 'headers' in kwargs:
             headers.update(kwargs.pop('headers'))
-        return self._session.patch(url, data=data, headers=headers, **kwargs)
+        return self._retry(self._session.patch, url, data=data, headers=headers, **kwargs)
 
     def DELETE(self, url, **kwargs):
         self._respect_limits()
-        return self._session.delete(url, **kwargs)
+        return self._retry(self._session.delete, url, **kwargs)
 
     def get_url(self, _path, **kwargs):
         if kwargs:

@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import time
+
 from egnyte import base, exc, resources
 
 
@@ -58,11 +60,11 @@ class Events(base.Resource):
     _url_template = "pubapi/v1/events/cursor"
     _url_template_list = "pubapi/v1/events"
     _lazy_attributes = {'latest_event_id', 'oldest_event_id', 'timestamp'}
+    poll_delay = 1.0
     start_id = None
     suppress = None
     folder = None
     types = None
-    callbacks = None
 
     def filter(self, start_id=None, suppress=None, folder=None, types=None):
         """
@@ -89,8 +91,11 @@ class Events(base.Resource):
             start_id = self.start_id
         params = base.filter_none_values(dict(id=start_id, suppress=self.suppress, type=self.types, count=count))
         url = self._client.get_url(self._url_template_list)
-        json = exc.default.check_json_response(self._client.GET(url, params=params))
-        return base.ResultList((Event(self._client, **d) for d in json.get('events', ())), json['latest_id'], start_id)
+        json = exc.no_content_ok.check_json_response(self._client.GET(url, params=params))
+        if json is None:
+            return ()
+        else:
+            return base.ResultList((Event(self._client, **d) for d in json.get('events', ())), json['latest_id'], start_id)
 
     def poll(self, count=None):
         """
@@ -103,16 +108,14 @@ class Events(base.Resource):
             last = results[-1]
             self.start_id = last.id
             self.timestamp = last.timestamp
-            self._do_callbacks(results)
         return results
 
-    def _do_callbacks(self, results):
-        pass
-
-    def start_polling(self):
-        pass
-
-
-
-
-
+    def __iter__(self):
+        """Never ending generator of events."""
+        while True:
+            results = self.poll()
+            for x in results:
+                yield x
+            if not results:
+                time.sleep(self.poll_delay)
+            
