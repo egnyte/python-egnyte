@@ -8,49 +8,60 @@ from egnyte import base, exc, resources
 
 class Event(base.Resource):
     """
-    Event.
+    Event data.
 
-    Example attributes:
+    Attributes:
+
     * id - event id
     * timestamp - date of event in iso8061 format
-    * action_source - event source like [ WebUI | SyncEngine | Mobile | PublicAPI ]
+    * action_source - event source: WebUI, SyncEngine, Mobile or PublicAPI
     * actor - id of user that generate event
-    * type - event type. For now we will support [ file_system | note ]
-    * action - event action. For now we will support [ create | delete | move | copy | rename ]
+    * type - event type. For now we will support: file_system or note
+    * action - event action. For now we will support: create,  delete,  move,  copy, or rename
     * object_detail - url to pub api that provide detail info about object from event like https://domain.egnyte.com/pubapi/v1/fs/Shared
     * data - additional data specific for event type and action
 
     Possible fields for 'data' field:
+
     for 'type'='file' and action create or delete
+
         'target_id' - entry id of create/deleted file
         'target_path' - path to created/deleted file
+
     for 'type'='file' and action move/copy/rename
+
         'source_path' - source path to moved/copied/renamed file
         'target_path' - target path to moved/copied/renamed file
         'source_id' - source entry id of moved/copied/renamed file (for move/rename there is one entry id so could be only one field or same data for source_id and target_id)
         'target_id' - target entry id of moved/copied/renamed file
+
     for 'type'='folder' and action create or delete
+
         'target_path' - path to created/deleted folder
         'folder_id' - folder id of created/deleted folder
+
     for 'type'='folder' and action move/copy/rename
+
         'source_path' - source path to moved/copied/renamed folder
         'target_path' - target path to moved/copied/renamed folder
         'source_id' - source folder id of moved/copied/renamed folder
         'target_id' - target folder id of moved/copied/renamed folder
+
+
     for 'type'='note' and any available action (create, delete)
         'note_id' - id of added/deleted note
-
     """
     _url_template = "pubapi/v1/events/%(id)s"
 
     def user(self):
-        """Get a user object based on actor attributes"""
+        """Get a user object based on event attributes"""
         return resources.User(self._client, id=self.actor)
 
 
 class Events(base.Resource):
     """
     Events.
+
     Attributes:
 
     * latest_event_id - id of latest event
@@ -111,7 +122,7 @@ class Events(base.Resource):
         return results
 
     def __iter__(self):
-        """Never ending generator of events."""
+        """Never ending generator of events. Will block if necessary"""
         while True:
             results = self.poll()
             for x in results:
