@@ -9,7 +9,7 @@ with open(os.path.join(os.path.dirname(__file__), "README.rst"), "rt") as f:
 
 args = dict(
     name='egnyte',
-    version='0.4',
+    version='0.5',
     author='Vijayendra Bapte, Maciej Szumocki',
     author_email='api-support@egnyte.com',
     license='MIT',
