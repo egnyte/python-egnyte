@@ -1,3 +1,3 @@
 __all__ = ['EgnyteClient']
 
-from egnyte.client import EgnyteClient
+from .client import EgnyteClient
