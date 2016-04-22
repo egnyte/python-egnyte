@@ -316,6 +316,22 @@ class Group(base.Resource):
         """Delete this Group"""
         base.Resource.delete(self)
 
+    def full_update(self, displayName, members=None):
+        """
+        Full update of this group.
+
+        This endpoint is used to overwrite all of the attributes of a group. This is especially useful for making a change to settings that ensures all prior settings are removed.
+
+        * displayName: Name of the group (string). Required
+        * members: List of members to be added to the new group (user ids or User objects). Optional.
+        """
+        url = self._client.get_url(self._url_template, id=self.id)
+        data = dict(displayName=displayName)
+        if members is not None:
+            data['members'] = [dict(value=x.id if isinstance(x, User) else x) for x in members]
+        json = exc.default.check_json_response(self._client.PATCH(url, data))
+        self._update_attributes(json)
+
 
 class Links(base.HasClient):
     """Link management API"""
@@ -551,6 +567,7 @@ class Groups(base.HasClient):
             data['members'] = [dict(value=x.id if isinstance(x, User) else x) for x in members]
         json = exc.created.check_json_response(self._client.POST(url, data))
         return Group(self._client, **json)
+    
 
     def get(self, id):
         """Get a Group object by id. Does not check if Group exists."""
