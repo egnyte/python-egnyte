@@ -173,7 +173,8 @@ def get_access_token(config):
         password=config['password'],
         grant_type="password",
     )
-    return exc.default.check_json_response(session.POST(url, data))['access_token']
+    response = session.POST(url, data, headers={'content-type': 'application/x-www-form-urlencoded'})
+    return exc.default.check_json_response(response)['access_token']
 
 
 class _FileChunk(object):
