@@ -91,7 +91,7 @@ class Events(base.Resource):
         if types is not None:
             types = '|'.join(types)
         d = self.__dict__.copy()
-        d.update(base.filter_none_values(dict(start_id=start_id, suppress=suppress, folder=None, type=types)))
+        d.update(base.filter_none_values(dict(start_id=start_id, suppress=suppress, folder=folder, type=types)))
         return self.__class__(**d)
 
     def list(self, start_id, count=None):
