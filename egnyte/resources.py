@@ -94,7 +94,7 @@ class File(FileOrFolder):
             while retries > 0:
                 url = self._client.get_url(self._url_template_content, path=self.path)
                 chunk = base._FileChunk(fp, 0, size)
-                r = self._client.POST(url, data=chunk, headers={'Content-length': size})
+                r = self._client.POST(url, data=chunk, headers={'Content-length': str(size)})
                 exc.default.check_response(r)
                 server_sha = r.headers['X-Sha512-Checksum']
                 our_sha = chunk.sha.hexdigest()
