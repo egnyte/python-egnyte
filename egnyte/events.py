@@ -100,7 +100,7 @@ class Events(base.Resource):
         """
         if start_id is None:
             start_id = self.start_id
-        params = base.filter_none_values(dict(id=start_id, suppress=self.suppress, type=self.types, count=count))
+        params = base.filter_none_values(dict(id=start_id, suppress=self.suppress, type=self.types, count=count, folder=self.folder))
         url = self._client.get_url(self._url_template_list)
         json = exc.no_content_ok.check_json_response(self._client.GET(url, params=params))
         if json is None:
@@ -129,4 +129,3 @@ class Events(base.Resource):
                 yield x
             if not results:
                 time.sleep(self.poll_delay)
-            
