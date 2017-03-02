@@ -129,7 +129,7 @@ class File(FileOrFolder):
         headers = {}
         for chunk_number, chunk in enumerate(chunks, 1):  # count from 1 not 0
             headers['x-egnyte-chunk-num'] = "%d" % chunk_number
-            headers['content-length'] = chunk.size
+            headers['content-length'] = str(chunk.size)
             if chunk_number == chunk_count:  # last chunk
                 headers['x-egnyte-last-chunk'] = "true"
             retries = max(self._upload_retries, 1)

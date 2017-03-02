@@ -9,8 +9,8 @@ with open(os.path.join(os.path.dirname(__file__), "README.rst"), "rt") as f:
 
 args = dict(
     name='egnyte',
-    version='0.5.1',
-    author='Vijayendra Bapte, Maciej Szumocki',
+    version='0.5.2',
+    author='Egnyte',
     author_email='api-support@egnyte.com',
     license='MIT',
     description='Egnyte Public API SDK',
@@ -20,10 +20,10 @@ args = dict(
     url='https://developers.egnyte.com/',
     include_package_data=True,
     install_requires=[
-        "requests>=2.2.1",
-        "six>=1.8.0",
+        "requests>=2.13.0",
+        "six>=1.10.0"
     ],
-    platforms = ["Any"],
+    platforms=["Any"],
     classifiers=[
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.3",

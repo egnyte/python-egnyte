@@ -1,46 +1,61 @@
-from __future__ import print_function
+from egnyte import configuration, client
+import unittest
 
-from egnyte.tests.config import IntegrationCase
+CONFIG_NAME = 'test_config.json'
+USERNAME = "python_sdk_test_user"
+EXTERNAL_ID = "python_sdk_test_user"
+EMAIL = "python_sdk_test_user@example.com"
+ANOTHER_EMAIL = "python_sdk_another_email@example.com"
+FAMILY_NAME = "Doe"
+GIVEN_NAME = "John"
+ACTIVE = False
+SEND_INVITE = False
 
 
-class TestUserInfo(IntegrationCase):
+class TestUserInfo(unittest.TestCase):
     def test_userinfo(self):
-        data = self.client.user_info
-        self.assertEqual(data["username"], self.config['login'], "Username received from API does not match one in config file")
+        self.config = configuration.load(CONFIG_NAME)
+        self.egnyte = client.EgnyteClient(self.config)
+        data = self.egnyte.user_info
+        self.assertEqual(data["username"], self.config['login'],
+                         "Username received from API does not match one in config file")
 
 
-class TestUsers(IntegrationCase):
-    def test_create_and_search(self):
-        users = self.client.users
-        user = users.create(userName="test_user_1", externalId="test_user_1", email="test_user_1@example.com",
-                            familyName="John", givenName="Doe", active=False, sendInvite=False)
-        try:
-            search = users.list()
-            self.assertIn(user, search, "User should be in list of all users")
+class TestUsers(unittest.TestCase):
+    def setUp(self):
+        self.config = configuration.load(CONFIG_NAME)
+        self.egnyte = client.EgnyteClient(self.config)
+        self.users = self.egnyte.users
+        self.user = self.__create_user(self.users)
 
-            user2 = users.by_email("test_user_1@example.com")
-            self.assertEqual(user, user2, "Should find user by email")
-            user3 = users.by_username("test_user_1")
-            self.assertEqual(user, user3, "Should find user by username")
+    def tearDown(self):
+        self.user.delete()
 
-            user.update(email="another_email@example.com")
-            user4 = users.by_email("test_user_1@example.com")
-            self.assertIsNone(user4, "Should not find user after email has changed")
+    def test_list_users(self):
+        all_users = self.egnyte.users.list()
+        self.assertGreaterEqual(all_users, 1)
 
-        finally:
-            user.delete()
+    def test_create_user(self):
+        user_by_email = self.users.by_email(EMAIL)
+        self.assertEqual(self.user, user_by_email, "Should find user by email")
 
-class TestGroups(IntegrationCase):
-    groupName = "python integration test group"
+        user_by_username = self.users.by_username(USERNAME)
+        self.assertEqual(self.user, user_by_username, "Should find user by username")
 
-    def test_create(self):
-        user = self.client.users.by_username(self.config['login'])
-        groups = self.client.groups
+    def test_update_user(self):
+        self.user.update(email=ANOTHER_EMAIL)
 
-        group1 = groups.create(self.groupName, [user])
-        try:
-            group2 = groups.by_displayName(self.groupName)
-            self.assertEqual(group1, group1)
-            self.assertEqual(group2.members[0]['username'], self.config['login'])
-        finally:
-            group1.delete()
+        user_updated = self.users.by_email(EMAIL)
+        self.assertIsNone(user_updated, "Should not find user after email has changed")
+
+        user_updated = self.users.by_email(ANOTHER_EMAIL)
+        self.assertEqual(self.user, user_updated, "Should find user by new email")
+
+    def __create_user(self, users):
+        return users.create(userName=USERNAME,
+                            externalId=EXTERNAL_ID,
+                            email=EMAIL,
+                            familyName=FAMILY_NAME,
+                            givenName=GIVEN_NAME,
+                            active=False,
+                            sendInvite=False)

@@ -1,0 +1,8 @@
+stages:
+  - test
+
+testing:
+  stage: test
+  script: "./gitlab-ci-test.sh"
+  tags:
+    - python

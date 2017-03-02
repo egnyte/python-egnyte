@@ -17,4 +17,5 @@ _trial_temp
 .idea
 *.iml
 doc/_*
+venv/
 

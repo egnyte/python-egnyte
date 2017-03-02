@@ -1,17 +1,22 @@
-from egnyte.tests.config import IntegrationCase
+from egnyte.tests.config import EgnyteTestCase
 
-class TestSearch(IntegrationCase):
+FILE_PATH = '/search/test1.txt'
+FILE_CONTENT = b'Lorem ipsum'
+SEARCH_QUERY = u'ipsum'
+
+
+class TestSearch(EgnyteTestCase):
     def setUp(self):
         super(TestSearch, self).setUp()
         self.root_folder.create()
-        self.filepath = self.root_folder.path + '/search/test1.txt'
+        self.filepath = self.root_folder.path + FILE_PATH
 
     def test_file_search(self):
-        source = b'Lorem ipsum'
-        f = self.client.file(self.filepath)
-        f.upload(source)
-        d = self.client.search.files(u'ipsum')
-        self.assertIsNotNone(d) # empty list is possible, as we won't get an answer here during the first run - it takes ~1min for file to pass through indexing pipeline
-        if d:
-            self.assert_(u'ipsum' in d[0].snippet)
-            f = d[0].file()
+        _file = self.egnyte.file(self.filepath)
+        _file.upload(FILE_CONTENT)
+        search_results = self.egnyte.search.files(SEARCH_QUERY)
+        # empty list is possible, as we won't get an answer here during the first run:
+        # it takes ~1min for file to pass through indexing pipeline
+        self.assertIsNotNone(search_results)
+        if search_results:
+            self.assert_(SEARCH_QUERY in search_results[0].snippet)

@@ -21,6 +21,7 @@ class Audits(base.HasClient):
         * format: 'csv' or 'json'
         * date_start: string in 'YYYY-MM-DD' format or datetime.date - first day report should cover
         * date_end: string in 'YYYY-MM-DD' format or datetime.date - last day report should cover
+        * events: list of events to report on, at least one must be specified, allowed values: logins, logouts, account_lockouts, password_resets, failed_attempts
 
         Returns an AuditReport object.
         """
@@ -122,7 +123,7 @@ class AuditReport(base.Resource):
     def download(self):
         r = self._client.GET(self.complete_url(), stream=True)
         exc.default.check_response(r)
-        return base.FileDownload(r)
+        return base.FileDownload(r, None)
 
     def json(self):
         r = self._client.GET(self.complete_url())

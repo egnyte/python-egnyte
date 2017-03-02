@@ -8,13 +8,12 @@ import os
 import os.path
 import re
 import time
+import requests
 
 from six import string_types, text_type
 from six.moves.urllib.parse import quote
-
-import requests
-
 from egnyte import exc, configuration
+
 
 JSON_HEADERS = {'content-type': 'application/json'}
 

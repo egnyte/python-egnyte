@@ -1,60 +1,70 @@
-from six import BytesIO
+from egnyte.tests.config import EgnyteTestCase
+from egnyte import exc
+from helpers import upload_file
 
-from egnyte.tests.config import IntegrationCase
+FILE_FIRST_VERSION_NAME = 'FILE1.png'
+FILE_SECOND_VERSION_NAME = 'FILE2.png'
+TEXT_FILE_CONTENT = 'test_content'
+DOWNLOADED_FILE_NAME = 'DOWNLOADED.png'
+EGNYTE_FILE_NAME_IMAGE = '/sample.png'
+EGNYTE_FILE_NAME_TEXT = '/test.txt'
+DESTINATION_FOLDER_NAME = 'to_here'
 
 
-class TestFiles(IntegrationCase):
+class TestFiles(EgnyteTestCase):
     def setUp(self):
         super(TestFiles, self).setUp()
-        self.filepath = self.root_folder.path + '/test.txt'
+        self.filepath = self.root_folder.path + EGNYTE_FILE_NAME_IMAGE
         self.root_folder.create()
 
-    def test_create_file_bytesio(self):
-        source = BytesIO(b'vijayendra')
-        source.seek(0)
+    def test_upload_file(self):
+        uploaded_file = upload_file(self.egnyte, FILE_FIRST_VERSION_NAME, self.filepath)
 
-        self.client.folder(self.root_folder.path).create()
-        self.client.file(self.filepath).upload(source)
+        self.assertIsNone(uploaded_file.check())
 
-        dest = BytesIO()
-        self.client.file(self.filepath).download().write_to(dest)
+    def test_download_file(self):
+        uploaded_file = self.egnyte.file(self.root_folder.path + EGNYTE_FILE_NAME_TEXT)
+        uploaded_file.upload(TEXT_FILE_CONTENT)
 
-        dest.seek(0)
-        source.seek(0)
+        downloaded_file = uploaded_file.download()
 
-        self.assertEqual(source.read(), dest.read(), "Uploaded and downloaded file's contents do not match")
+        self.assertEqual(downloaded_file.response.status_code, 200)
+        self.assertEqual(downloaded_file.read(), TEXT_FILE_CONTENT)
 
-    def test_create_file_strings(self):
-        source = b'vijayendra'
-        self.client.folder(self.root_folder.path).create()
-        self.client.file(self.filepath).upload(source)
+    def test_copy_file(self):
+        destination = self.root_folder.folder(DESTINATION_FOLDER_NAME)
+        destination.create()
+        uploaded_file = upload_file(self.egnyte, FILE_FIRST_VERSION_NAME, self.filepath)
 
-        dest = self.client.file(self.filepath).download().read()
+        copied_file = uploaded_file.copy(destination.path + EGNYTE_FILE_NAME_IMAGE)
 
-        self.assertEqual(source, dest, "Uploaded and downloaded file's contents do not match")
+        self.assertIsNone(uploaded_file.check())
+        self.assertIsNone(copied_file.check())
 
-    def test_create_file_chunked(self):
-        source = BytesIO(b'0123456789' * 1024 * 10)  # 100k bytes
-        source.seek(0)
-        self.client.folder(self.root_folder.path).create()
+    def test_move_file(self):
+        destination = self.root_folder.folder(DESTINATION_FOLDER_NAME)
+        destination.create()
+        uploaded_file = upload_file(self.egnyte, FILE_FIRST_VERSION_NAME, self.filepath)
 
-        f = self.client.file(self.filepath)
-        f.upload_chunk_size = 40000
-        f.upload(source)
+        moved_file = uploaded_file.move(destination.path + EGNYTE_FILE_NAME_IMAGE)
 
-        dest = BytesIO()
-        self.client.file(self.filepath).download().write_to(dest)
+        with self.assertRaises(exc.NotFound):
+            uploaded_file.check()
+        self.assertIsNone(moved_file.check())
 
-        dest.seek(0)
-        source.seek(0)
+    def test_delete_file(self):
+        uploaded_file = upload_file(self.egnyte, FILE_FIRST_VERSION_NAME, self.filepath)
 
-        self.assertEqual(source.read(), dest.read(), "Uploaded and downloaded file's contents do not match")
+        self.assertIsNone(uploaded_file.check())
 
-        partial_start = 5009
-        partial_size = 104
-        partial = f.download((partial_start, partial_start + partial_size - 1))
-        source.seek(partial_start)
+        uploaded_file.delete()
 
-        source_content = source.read(partial_size)
-        partial_content = partial.read()
-        self.assertEqual(source_content, partial_content, "Partial download content does not match")
+        with self.assertRaises(exc.NotFound):
+            uploaded_file.check()
+
+    def test_upload_new_version(self):
+        upload_file(self.egnyte, FILE_FIRST_VERSION_NAME, self.filepath)
+        second_version = upload_file(self.egnyte, FILE_SECOND_VERSION_NAME, self.filepath)
+        file_attributes = second_version._fetch_attributes()
+
+        self.assertEqual(file_attributes['num_versions'], 2)

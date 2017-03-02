@@ -129,6 +129,8 @@ If you're using implicit flow, you'll need to provide access token directly.
 If you're using API token with resource flow, you can generate API access token using command line options.
 See the full documentation or install, then use:
 
+.. code-block:: python
+
     python -m egnyte -h
 
 Dependencies
@@ -136,8 +138,8 @@ Dependencies
 
 This library depends on:
 
--  requests 2.2.1 or later - for HTTPS calls
--  six 1.8.0 or later - for Python 2 and 3 compatibility using same
+-  requests 2.13.0 or later - for HTTPS calls
+-  six 1.10.0 or later - for Python 2 and 3 compatibility using same
    source
 
 Thread safety
@@ -153,22 +155,44 @@ Running tests
 Tests can be run with nose or trial directly on the egnyte package, or
 from setup.py:
 
+.. code-block:: python
+
     python setup.py test
 
 or
 
-    python setup.py nosetests
+.. code-block:: python
 
-Integration tests will be skipped unless you create ~/.egnyte/test\_config.json
+    python -m unittest discover
+
+In order to run tests, you need to create test configuration file: ~/.egnyte/test\_config.json
+
+.. code-block:: json
+
+    {
+        "access_token": "access token you received after passing the auth flow", 
+        "api_key": "key you received after registering your developer account", 
+        "domain": "your Egnyte domain, e.g. example.egnyte.com", 
+        "login": "username of Egnyte admin user", 
+        "password": "password of the same Egnyte admin user"
+    }
+
 You can create this file manually or with following command:
 
-    python -m egnyte -c test\_config.json config create -k -d -l \[-p ]
+.. code-block:: python
+
+    python -m egnyte -c test\_config.json config create -k <API_Key> -d <domain> -l <username> -p <password> -t <access_token>
+
+Tests will be run against your domain on behalf on admin user.
+
+Please refer to https://developers.egnyte.com/docs/read/Public_API_Authentication#Internal-Applications for information
+about how to generate access token.
 
 Helping with development
 ========================
 
-First, report any problems you find to
-https://developers.egnyte.com/forum/ or api-support@egnyte.com
+Please report any problems you find to
+api-support@egnyte.com or pint@egnyte.com
 
 If you'd like to fix something yourself, please fork this repository,
 commit the fixes and updates to tests, then set up a pull request with
