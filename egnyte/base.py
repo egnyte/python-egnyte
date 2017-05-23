@@ -16,6 +16,7 @@ from egnyte import exc, configuration
 
 
 JSON_HEADERS = {'content-type': 'application/json'}
+DEFAULT_TIMEOUT = 30
 
 
 class Session(object):
@@ -48,6 +49,10 @@ class Session(object):
             self.last_request_time = time.time()
 
     def _retry(self, func, *args, **kwargs):
+
+        kwargs["timeout"] = int(self.config.get("timeout")) if self.config.get(
+            "timeout") is not None else DEFAULT_TIMEOUT
+
         while True:
             response = func(*args, **kwargs)
             if response.headers.get('x-mashery-error-code') == 'ERR_403_DEVELOPER_OVER_QPS':

@@ -52,6 +52,7 @@ def create_main_parser():
 
     for parser in (parser_config_create, parser_config_update):
         parser.add_argument('-t', '--token', dest='access_token', required=False, help='API access token')
+        parser.add_argument('-T', '--timeout', required=False, help='Request timeout')
 
     # Audit generator
 
@@ -140,7 +141,7 @@ def to_json(obj):
 
 class Commands(object):
     _config = None
-    config_keys = ('login', 'password', 'domain', 'api_key', 'access_token')
+    config_keys = ('login', 'password', 'domain', 'api_key', 'access_token', 'timeout')
     STATUS_CMD_NOT_FOUND = 1
     STATUS_API_ERROR = 2
     INFO = 1

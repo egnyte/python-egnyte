@@ -133,6 +133,22 @@ See the full documentation or install, then use:
 
     python -m egnyte -h
 
+Create configuration
+====================
+
+Configuration file will be created in ~/.egnyte/config.json
+
+.. code-block:: python
+
+    python -m egnyte config create -d DOMAIN [-l LOGIN] [-p PASSWORD] -k API_KEY [-t ACCESS_TOKEN] [-T TIMEOUT]
+
+Set request timeout
+===================
+
+.. code-block:: python
+
+    python -m egnyte config update --timeout TIMEOUT_INTEGER
+
 Dependencies
 ============
 
