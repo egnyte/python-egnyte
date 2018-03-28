@@ -211,7 +211,7 @@ class Folder(FileOrFolder):
         if users is not None:
             query_params[u'users'] = '|'.join(six.text_type(x) for x in users)
         if groups is not None:
-            query_params[u'groups'] = '|'.join(six.text_type(x) for x in users)
+            query_params[u'groups'] = '|'.join(six.text_type(x) for x in groups)
         url = self._client.get_url(self._url_template_permissions, path=self.path)
         r = exc.default.check_json_response(self._client.GET(url, params=query_params))
         return PermissionSet(r)
