@@ -74,7 +74,7 @@ class File(FileOrFolder):
     _upload_retries = 3
     _link_kind = 'file'
     _lazy_attributes = {'num_versions', 'name', 'checksum', 'last_modified', 'entry_id',
-                        'uploaded_by', 'size', 'is_folder'}
+                        'uploaded_by', 'size', 'is_folder', 'versions'}
     _url_template_content = "pubapi/v1/fs-content%(path)s"
     _url_template_content_chunked = "pubapi/v1/fs-content-chunked%(path)s"
 
