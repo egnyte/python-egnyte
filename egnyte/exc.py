@@ -127,7 +127,7 @@ class ErrorMapping(dict):
     """Maps HTTP status to EgnyteError subclasses"""
     ignored_errors = ()
 
-    def __init__(self, values=None, ok_statuses=(http_client.OK, ), ignored_errors=None):
+    def __init__(self, values=None, ok_statuses=(http_client.OK, http_client.NO_CONTENT), ignored_errors=None):
         super(ErrorMapping, self).__init__({
             http_client.BAD_REQUEST: RequestError,
             http_client.UNAUTHORIZED: NotAuthorized,
