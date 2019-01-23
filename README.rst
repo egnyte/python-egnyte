@@ -197,7 +197,7 @@ You can create this file manually or with following command:
 
 .. code-block:: python
 
-    python -m egnyte -c test\_config.json config create -k <API_Key> -d <domain> -l <username> -p <password> -t <access_token>
+    python -m egnyte -c test_config.json config create -k <API_Key> -d <domain> -l <username> -p <password> -t <access_token>
 
 Tests will be run against your domain on behalf on admin user.
 
