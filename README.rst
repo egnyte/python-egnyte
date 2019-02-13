@@ -119,7 +119,7 @@ Full documentation
 ==================
 
 The docs subdirectory contains just the source for the documentation.
-You can read the documentation at http://egnyte.github.io/python-egnyte-docs/
+You can read the documentation at http://egnyte.github.io/python-egnyte/
 
 
 Command line
