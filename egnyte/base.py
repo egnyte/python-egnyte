@@ -177,7 +177,7 @@ def get_access_token(config):
         password=config['password'],
         grant_type="password",
     )
-    response = session.POST(url, data, headers={'content-type': 'application/x-www-form-urlencoded'})
+    response = session.POST(url, data=data, headers={'content-type': 'application/x-www-form-urlencoded'})
     return exc.default.check_json_response(response)['access_token']
 
 
