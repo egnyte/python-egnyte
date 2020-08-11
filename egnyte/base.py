@@ -52,14 +52,21 @@ class Session(object):
 
         kwargs["timeout"] = int(self.config.get("timeout")) if self.config.get(
             "timeout") is not None else DEFAULT_TIMEOUT
-
-        while True:
-            response = func(*args, **kwargs)
-            if response.headers.get('x-mashery-error-code') == 'ERR_403_DEVELOPER_OVER_QPS':
-                retry_after = float(response.headers.get('retry-after', '1'))
-                time.sleep(retry_after)
-            else:
-                return response
+        
+        retries = 3
+        while retries > 0:
+            try:
+                response = func(*args, **kwargs)
+                if response.headers.get('x-mashery-error-code') == 'ERR_403_DEVELOPER_OVER_QPS':
+                    retry_after = float(response.headers.get('retry-after', '1'))
+                    time.sleep(retry_after)
+                else:
+                    return response
+            except (requests.ConnectionError, requests.Timeout):
+                retries -= 1
+                if retries == 0:
+                    raise 
+                time.sleep(1)
 
     def GET(self, url, **kwargs):
         self._respect_limits()
