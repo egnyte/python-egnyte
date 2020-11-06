@@ -598,21 +598,38 @@ class SearchMatch(base.HasClient):
     * uploaded_by The formatted name of the user who uploaded the file.
     * uploaded_by_username The username of the user who uploaded the file.
     * num_versions The number of versions of the file available.
-    * is_folder A boolean value stating if the object is a file or folder. Please note that, currently, this API only returns file objects.
+    * is_folder A boolean value stating if the object is a file or folder.
     """
 
-    def file(self):
-        """Get File object that correspons to this search match, or None if found resource is not a File"""
+    def file(self, include_folders=True):
+        """Get File object that correspons to this search match."""
         if not self.is_folder:
             return File(self._client, name=self.name, path=self.path, is_folder=self.is_folder, num_versions=self.num_versions,
                         entry_id=self.entry_id, uploaded_by=self.uploaded_by, size=self.size, last_modified=self.last_modified)
+        elif include_folders:
+            return Folder(self._client, name=self.name, path=self.path, is_folder=self.is_folder, custom_properties=self.custom_properties)
+    
+    def __repr__(self):
+        return 'SearchMatch(%s)' % self._raw_data
 
 
 class Search(base.HasClient):
     """Search API"""
-    _url_template = "pubapi/v1/search"
+    _url_template = "pubapi/v2/search"
+    _sort_by = ["last_modified", "size", "score", "name"]
+    _sort_dir = ["ascending", "descending"]
 
-    def files(self, query, offset=None, count=None, folder=None, modified_after=None, modified_before=None):
+    def files(self, 
+              query = None, 
+              offset = None, 
+              count = None, 
+              folder = None, 
+              modified_after = None, 
+              modified_before = None,
+              namespaces = None,
+              custom_metadata = None,
+              sort_by = None,
+              sort_direction = None):
         """
         Search for files.
         Parameters:
@@ -621,19 +638,44 @@ class Search(base.HasClient):
         * offset The 0-based index of the initial record being requested (Integer >= 0).
         * count The number of entries per page (min 1, max 100)
         * folder Limit the result set to only items contained in the specified folder.
-        * modified_before Limit to results before the specified ISO-8601 timestamp (datetime.date object or string).
-        * modified_after Limit to results after the specified ISO-8601 timestamp (datetime.date object or string).
+        * modified_before Limit to results before the specified datetime (datetime.date object or ISO 8601 format datetime string {YYYY-MM-DDTHH:MM:SS}).
+        * modified_after Limit to results after the specified datetime timestamp (datetime.date or ISO 8601 format datetime string {YYYY-MM-DDTHH:MM:SS}).
+        * namespaces List of strings containing the name of the namespaces requested. Namespace will only return if there is a value in any of the fields.
+        * custom_metadata Either this or query is required. List of JSON containing values to search - See https://developers.egnyte.com/docs/read/Search_API#Search%20v2
+        * sort_by Returns sorted search results. Valid values are one of {"last_modified", "size", "score", "name"}.
+        * sort_direction Sort results in ascending or descending order.
 
-        Returns list of SearchMatch objects, with additional attributes total_count and offset.
+        Returns list of SearchMatch objects, with additional attributes offset, total_count and has_more.
         """
+        
+        if not query and not custom_metadata:
+            raise exc.InvalidParameters(
+                "query and custom_metadata both can't be None at the same time. "
+                "Either pass the query or custom_metadata or both to search."
+            )
+         
+        if sort_by and sort_by not in self._sort_by:
+            raise exc.InvalidParameters(
+                "Invalid sort_by, it must be one of %s" % self._sort_by
+            )
+        
+        if sort_direction and sort_direction not in self._sort_dir:
+            raise exc.InvalidParameters(
+                "Invalid sort_direction, it must be one of %s" % self._sort_dir
+            )
+        
         url = self._client.get_url(self._url_template)
         params = base.filter_none_values(dict(
             query=query,
             offset=offset,
             count=count,
             folder=folder,
-            modified_after=base.date_format(modified_after),
-            modified_before=base.date_format(modified_before))
+            modified_after=base.date_in_ms(modified_after),
+            modified_before=base.date_in_ms(modified_before),
+            custom_metadata=custom_metadata,
+            namespaces=namespaces,
+            sort_by=sort_by,
+            sort_direction=sort_direction)
         )
-        json = exc.default.check_json_response(self._client.GET(url, params=params))
-        return base.ResultList((SearchMatch(self._client, **d) for d in json.get('results', ())), json['total_count'], json['offset'])
+        json = exc.default.check_json_response(self._client.POST(url, json=params))
+        return base.ResultList((SearchMatch(self._client, **d) for d in json.get('results', ())), json['total_count'], json['offset'], json['hasMore'])

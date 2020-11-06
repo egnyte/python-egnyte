@@ -118,6 +118,7 @@ class HasClient(object):
 
     def __init__(self, _client, **kwargs):
         self._client = _client
+        self._raw_data = kwargs
         self.__dict__.update(kwargs)
 
 
@@ -239,6 +240,21 @@ def date_format(date):
     else:
         return date
 
+def date_in_ms(date):
+    if isinstance(date, (datetime.datetime, datetime.date)):
+        return int(date.strftime("%s")) * 1000
+    elif isinstance(date, (text_type, string_types)):
+        try:
+            date = datetime.datetime.strptime(date, "%Y-%m-%dT%H:%M:%S")
+            return int(date.strftime("%s")) * 1000 
+        except ValueError:
+            raise exc.InvalidParameters(
+                "Datetime string must be in ISO 8601 format. E.g YYYY-MM-DDTHH:MM:SS, " 
+                "the given date {%s} couldn't be parsed" % date
+            )
+    else:
+        return date
+
 
 def encode_path(path):
     if isinstance(path, text_type):
@@ -355,7 +371,8 @@ class ResultList(list):
     """
     # TODO: make this more lazy?
 
-    def __init__(self, data, total_count, offset):
+    def __init__(self, data, total_count, offset, has_more):
         super(ResultList, self).__init__(data)
         self.total_count = total_count
         self.offset = offset
+        self.has_more = has_more
