@@ -128,3 +128,7 @@ class AuditReport(base.Resource):
     def json(self):
         r = self._client.GET(self.complete_url())
         return exc.default.check_json_response(r)
+
+    def delete(self):
+        r = self._client.DELETE(self.complete_url())
+        exc.default.check_response(r)
