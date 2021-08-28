@@ -2,7 +2,7 @@
 Exceptions and their handlers.
 """
 
-from six.moves import http_client
+from http import HTTPStatus
 
 __all__ = """
 EgnyteError InvalidParameters InsufficientPermissions NotFound Redirected NotAuthorized JsonParseError DomainRequired ClientIdRequired
@@ -15,12 +15,13 @@ class EgnyteError(Exception):
     def __str__(self):
         """Pretty-printed version. Use repr for bare vesion instead"""
         contents = []
-        for item in self:
+        for item in self.args:
             if isinstance(item, dict):
                 contents.append("{%s}" % ", ".join(sorted(["%s: '%s'" % (k, v) for (k, v) in item.items()])))
             else:
                 contents.append(str(item))
         return "<%s: %s>" % (self.__class__.__name__, ", ".join(contents))
+        return self
 
 
 class InvalidParameters(EgnyteError):
@@ -127,15 +128,15 @@ class ErrorMapping(dict):
     """Maps HTTP status to EgnyteError subclasses"""
     ignored_errors = ()
 
-    def __init__(self, values=None, ok_statuses=(http_client.OK, ), ignored_errors=None):
+    def __init__(self, values=None, ok_statuses=(HTTPStatus.OK, ), ignored_errors=None):
         super(ErrorMapping, self).__init__({
-            http_client.BAD_REQUEST: RequestError,
-            http_client.UNAUTHORIZED: NotAuthorized,
-            http_client.FORBIDDEN: InsufficientPermissions,
-            http_client.NOT_FOUND: NotFound,
-            http_client.CONFLICT: DuplicateRecordExists,
-            http_client.REQUEST_ENTITY_TOO_LARGE: FileSizeExceedsLimit,
-            http_client.SEE_OTHER: Redirected,
+            HTTPStatus.BAD_REQUEST: RequestError,
+            HTTPStatus.UNAUTHORIZED: NotAuthorized,
+            HTTPStatus.FORBIDDEN: InsufficientPermissions,
+            HTTPStatus.NOT_FOUND: NotFound,
+            HTTPStatus.CONFLICT: DuplicateRecordExists,
+            HTTPStatus.REQUEST_ENTITY_TOO_LARGE: FileSizeExceedsLimit,
+            HTTPStatus.SEE_OTHER: Redirected,
         })
         if values:
             self.update(values)
@@ -181,7 +182,7 @@ class ErrorMapping(dict):
         """
         try:
             r = self.check_response(response, *ok_statuses)
-            if r.status_code == http_client.NO_CONTENT:
+            if r.status_code == HTTPStatus.NO_CONTENT:
                 return None
             return r.json()
         except ValueError:
@@ -192,10 +193,10 @@ class ErrorMapping(dict):
         return self.__class__(self)
 
 default = ErrorMapping()
-partial = ErrorMapping(ok_statuses={http_client.PARTIAL_CONTENT})
-accepted = ErrorMapping(ok_statuses={http_client.ACCEPTED})
-created = ErrorMapping(ok_statuses={http_client.CREATED})
-no_content_ok = ErrorMapping(ok_statuses={http_client.OK, http_client.NO_CONTENT})
-created_ignore_existing = ErrorMapping(ok_statuses=(http_client.CREATED,), ignored_errors = [
+partial = ErrorMapping(ok_statuses={HTTPStatus.PARTIAL_CONTENT})
+accepted = ErrorMapping(ok_statuses={HTTPStatus.ACCEPTED})
+created = ErrorMapping(ok_statuses={HTTPStatus.CREATED})
+no_content_ok = ErrorMapping(ok_statuses={HTTPStatus.OK, HTTPStatus.NO_CONTENT})
+created_ignore_existing = ErrorMapping(ok_statuses=(HTTPStatus.CREATED,), ignored_errors = [
     (u'Folder already exists at this location', {'http status': 403})
 ])

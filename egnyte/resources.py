@@ -1,8 +1,4 @@
-from __future__ import unicode_literals
-
 import collections
-
-import six
 
 from egnyte import base, exc
 

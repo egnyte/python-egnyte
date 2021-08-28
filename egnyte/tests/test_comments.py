@@ -1,5 +1,5 @@
 from egnyte.tests.config import EgnyteTestCase
-from helpers import upload_file
+from egnyte.tests.helpers import upload_file
 
 EGNYTE_FILE_NAME = '/sample.png'
 FILE_NAME = 'FILE1.png'

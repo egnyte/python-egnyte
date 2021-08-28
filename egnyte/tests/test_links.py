@@ -1,7 +1,8 @@
 from egnyte import exc
 from egnyte.tests.config import EgnyteTestCase
-from helpers import upload_file
 import datetime
+
+from egnyte.tests.helpers import upload_file
 
 RECIPIENT_EMAIL_1 = 'test1@example.com'
 RECIPIENT_EMAIL_2 = 'test2@example.com'

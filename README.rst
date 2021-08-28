@@ -154,9 +154,8 @@ Dependencies
 
 This library depends on:
 
--  requests 2.13.0 or later - for HTTPS calls
--  six 1.10.0 or later - for Python 2 and 3 compatibility using same
-   source
+-  Python 3.6-3.9
+-  requests 2.13.0 or later
 
 Thread safety
 =============

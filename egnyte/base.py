@@ -8,10 +8,10 @@ import os
 import os.path
 import re
 import time
+from urllib.parse import quote
+
 import requests
 
-from six import string_types, text_type
-from six.moves.urllib.parse import quote
 from egnyte import exc, configuration
 
 
@@ -102,7 +102,7 @@ class Session(object):
 
     def get_url(self, _path, **kwargs):
         if kwargs:
-            kw = {k: encode_path(v) if isinstance(v, string_types) else str(v) for k, v in kwargs.items()}
+            kw = {k: encode_path(v) if isinstance(v, str) else str(v) for k, v in kwargs.items()}
             return self._url_prefix + _path % kw
         else:
             return self._url_prefix + _path
@@ -243,7 +243,7 @@ def date_format(date):
 def date_in_ms(date):
     if isinstance(date, (datetime.datetime, datetime.date)):
         return int(date.strftime("%s")) * 1000
-    elif isinstance(date, (text_type, string_types)):
+    elif isinstance(date, str):
         try:
             date = datetime.datetime.strptime(date, "%Y-%m-%dT%H:%M:%S")
             return int(date.strftime("%s")) * 1000 
@@ -257,7 +257,7 @@ def date_in_ms(date):
 
 
 def encode_path(path):
-    if isinstance(path, text_type):
+    if isinstance(path, str):
         path = path.encode('utf-8')
     return quote(path, b'/')
 
@@ -371,7 +371,7 @@ class ResultList(list):
     """
     # TODO: make this more lazy?
 
-    def __init__(self, data, total_count, offset, has_more):
+    def __init__(self, data, total_count, offset, has_more=False):
         super(ResultList, self).__init__(data)
         self.total_count = total_count
         self.offset = offset
