@@ -7,6 +7,8 @@ on:
   pull_request:
     types: [opened]
 
+concurrency: "single_test_domain"
+
 jobs:
   acceptance-tests:
     runs-on: ubuntu-latest
