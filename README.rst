@@ -108,7 +108,7 @@ Examples
     events = api.events.filter(folder='/Shared', suppress='user')
     old_events = events.list(events.latest_event_id - 10, count = 10) # get events in batches
     future_events = iter(events)
-    for event in future_events: # polls server continously, iterator over single events, iterator will never end
+    for event in future_events: # polls server continuously, iterator over single events, iterator will never end
         do_something(event)
         if condition(event):
             break
