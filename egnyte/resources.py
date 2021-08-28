@@ -1,7 +1,7 @@
 import collections
 
 from egnyte import base, exc
-
+from io import BytesIO
 
 class FileOrFolder(base.Resource):
     """Things that are common to both files and folders."""
@@ -80,8 +80,8 @@ class File(FileOrFolder):
         fp can be any file-like object, but if you don't specify it's size in advance it must support tell and seek methods.
         Progress callback is optional - if provided, it should match signature of ProgressCallbacks.upload_progress
         """
-        if isinstance(fp, six.binary_type):
-            fp = six.BytesIO(fp)
+        if isinstance(fp, bytes):
+            fp = BytesIO(fp)
         if size is None:
             size = base.get_file_size(fp)
         if size < self._upload_chunk_size:
@@ -205,9 +205,9 @@ class Folder(FileOrFolder):
         """
         query_params = {}
         if users is not None:
-            query_params[u'users'] = '|'.join(six.text_type(x) for x in users)
+            query_params[u'users'] = '|'.join(str(x) for x in users)
         if groups is not None:
-            query_params[u'groups'] = '|'.join(six.text_type(x) for x in groups)
+            query_params[u'groups'] = '|'.join(str(x) for x in groups)
         url = self._client.get_url(self._url_template_permissions, path=self.path)
         r = exc.default.check_json_response(self._client.GET(url, params=query_params))
         return PermissionSet(r)
