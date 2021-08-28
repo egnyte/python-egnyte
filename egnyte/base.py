@@ -307,7 +307,14 @@ class FileDownload(object):
         size - How much of the content to read. If specified, caching is skipped because it doesn't make sense to cache partial content as the full response.
         decode_content - If True, will attempt to decode the body based on the 'content-encoding' header.
         """
-        return self.response.raw.read(size, decode_content)
+        if decode_content:
+            # use request's automatic decoding
+            if size:
+                return self.response.text[0:size-1]
+            else:
+                return self.response.text
+        else:
+            return self.response.raw.read(size)
 
     def __iter__(self, **kwargs):
         """

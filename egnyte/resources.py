@@ -82,6 +82,8 @@ class File(FileOrFolder):
         """
         if isinstance(fp, bytes):
             fp = BytesIO(fp)
+        elif isinstance(fp, str):
+            fp = BytesIO(fp.encode('utf-8'))
         if size is None:
             size = base.get_file_size(fp)
         if size < self._upload_chunk_size:
