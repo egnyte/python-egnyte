@@ -33,7 +33,7 @@ class TestUsers(unittest.TestCase):
 
     def test_list_users(self):
         all_users = self.egnyte.users.list()
-        self.assertGreaterEqual(all_users, 1)
+        self.assertGreaterEqual(len(all_users), 1)
 
     def test_create_user(self):
         user_by_email = self.users.by_email(EMAIL)

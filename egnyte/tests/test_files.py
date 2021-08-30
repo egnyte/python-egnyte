@@ -1,6 +1,6 @@
 from egnyte.tests.config import EgnyteTestCase
 from egnyte import exc
-from helpers import upload_file
+from egnyte.tests.helpers import upload_file
 
 FILE_FIRST_VERSION_NAME = 'FILE1.png'
 FILE_SECOND_VERSION_NAME = 'FILE2.png'

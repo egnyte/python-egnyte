@@ -20,14 +20,14 @@ args = dict(
     url='https://developers.egnyte.com/',
     include_package_data=True,
     install_requires=[
-        "requests>=2.13.0",
-        "six>=1.10.0"
+        "requests>=2.13.0,<3",
     ],
     platforms=["Any"],
     classifiers=[
-        "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.3",
-        "Programming Language :: Python :: 3.4",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",

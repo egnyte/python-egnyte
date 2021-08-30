@@ -8,11 +8,12 @@ CONFIG_NAME = 'test_config.json'
 
 EXPECTED_FILES_TITLE = ['This report reflects activity up to 2/24/17 23:59:59']
 EXPECTED_FILES_HEADER = ['File/Folder', "Target Path/Link", 'User/Location',
-                         'Transaction Type', 'Action Info', 'Access', 'Time', 'IP Address']
+                         'User ID', 'Transaction Type', 'Action Info', 'Access', 'Time', 'IP Address',
+                         'Device Name', 'File Version', 'Space Used']
 EXPECTED_LOGINS_TITLE = [
     'This report reflects activity up to 2/24/17 23:59:59']
 EXPECTED_LOGINS_HEADER = [
-    'User Name', 'Event', 'IP Address', 'Access', 'Time', 'Logout Time']
+    'User Name', 'User ID', 'Event', 'IP Address', 'Access', 'Time', 'Logout Time']
 
 
 class TestAudits(unittest.TestCase):
@@ -59,7 +60,7 @@ class TestAudits(unittest.TestCase):
 
     def __read_csv_file(self, file_path):
         rows = []
-        with open(file_path, 'rb') as csvfile:
+        with open(file_path, 'r') as csvfile:
             reader = csv.reader(csvfile)
             for row in reader:
                 rows.append(row)

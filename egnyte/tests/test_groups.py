@@ -20,7 +20,7 @@ class TestGroups(unittest.TestCase):
     def test_list_groups(self):
         all_groups = self.egnyte.groups.list()
 
-        self.assertGreaterEqual(all_groups, 1)
+        self.assertGreaterEqual(len(all_groups), 1)
         self.assertIn(self.group, all_groups)
 
     def test_create_group(self):
