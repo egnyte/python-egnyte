@@ -9,7 +9,7 @@ with open(os.path.join(os.path.dirname(__file__), "README.rst"), "rt") as f:
 
 args = dict(
     name='egnyte',
-    version='0.5.3',
+    version='1.0.0b1',
     author='Egnyte',
     author_email='api-support@egnyte.com',
     license='MIT',
@@ -23,6 +23,7 @@ args = dict(
         "requests>=2.13.0,<3",
     ],
     platforms=["Any"],
+    python_requires='>=3.6, <3.10',
     classifiers=[
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",

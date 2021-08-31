@@ -1,4 +1,4 @@
-Copyright (c) 2014 Egnyte, Inc.
+Copyright (c) 2014-2021 Egnyte, Inc.
 
 MIT License
 
