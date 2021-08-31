@@ -148,9 +148,9 @@ class File(FileOrFolder):
             if progress_callback is not None:
                 progress_callback(self, size, chunk_number * self._upload_chunk_size)
 
-    def delete(self):
+    def delete(self, ignore_if_not_exists=True):
         """Delete this file."""
-        base.Resource.delete(self)
+        base.Resource.delete(self, ignore_if_not_exists)
 
     def add_note(self, message):
         """Add a note to this file. Returns the created Note object."""
@@ -191,9 +191,9 @@ class Folder(FileOrFolder):
         (exc.created_ignore_existing if ignore_if_exists else exc.created).check_response(r)
         return self
 
-    def delete(self):
+    def delete(self, ignore_if_not_exists=True):
         """Delete this folder in the cloud."""
-        base.Resource.delete(self)
+        base.Resource.delete(self, ignore_if_not_exists)
 
     def list(self):
         """
@@ -244,10 +244,9 @@ class Link(base.Resource):
     _lazy_attributes = {'copy_me', 'link_to_current', 'accessibility', 'notify',
                         'path', 'creation_date', 'type', 'send_mail'}
 
-    def delete(self):
+    def delete(self, ignore_if_not_exists=True):
         """Delete this link"""
-        base.Resource.delete(self)
-
+        base.Resource.delete(self, ignore_if_not_exists)
 
 class User(base.Resource):
     """
@@ -260,9 +259,9 @@ class User(base.Resource):
     _lazy_attributes = {'userName', 'externalId', 'email', 'name', 'active', 'locked', 'authType',
                         'role', 'userType', 'idpUserId'}
 
-    def delete(self):
+    def delete(self, ignore_if_not_exists=True):
         """Delete this user account."""
-        base.Resource.delete(self)
+        base.Resource.delete(self, ignore_if_not_exists)
 
     def update(self, email=None, familyName=None, givenName=None, active=None, sendInvite=None, authType=None,
                userType=None, idpUserId=None, userPrincipalName=None):
@@ -299,9 +298,9 @@ class Note(base.Resource):
     _url_template = "pubapi/v1/notes/%(id)s"
     _lazy_attributes = {'file_id', 'file_path', 'can_delete', 'creation_time', 'message', 'username', 'formatted_name'}
 
-    def delete(self):
+    def delete(self, ignore_if_not_exists=True):
         """Delete this Note"""
-        base.Resource.delete(self)
+        base.Resource.delete(self, ignore_if_not_exists)
 
     def get_file(self):
         """Get the file to which this note is attached."""
@@ -312,9 +311,9 @@ class Group(base.Resource):
     _url_template = "pubapi/v2/groups/%(id)s"
     _lazy_attributes = {'displayName', 'members'}
 
-    def delete(self):
+    def delete(self, ignore_if_not_exists=True):
         """Delete this Group"""
-        base.Resource.delete(self)
+        base.Resource.delete(self, ignore_if_not_exists)
 
     def full_update(self, displayName, members=None):
         """
