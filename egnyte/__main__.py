@@ -239,7 +239,7 @@ class Commands(object):
 
     def cmd_test(self):
         api = self.get_client()
-        info = api.user_info()
+        info = api.user_info
         print("Connection successful for user %s" % (info['username'],))
 
     def cmd_search(self):
