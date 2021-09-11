@@ -1,5 +1,11 @@
 ## Changelog
 
+### Unreleased
+
+* Fixed `cmd_test`. [PR #28](https://github.com/egnyte/python-egnyte/pull/28)
+
+Thanks to [@cobyiv](https://github.com/cobyiv) for their contribution!
+
 ### 1.0.0 beta 1
 
 * Drop Python 2 support (**breaking change**) [PR #26](https://github.com/egnyte/python-egnyte/pull/26)
