@@ -16,7 +16,7 @@ parser_kwargs = dict(formatter_class=lambda prog: argparse.HelpFormatter(prog, m
 
 
 def create_main_parser():
-    main = argparse.ArgumentParser(prog="python -m egnyte", **parser_kwargs)
+    main = argparse.ArgumentParser(prog="egnyte", **parser_kwargs)
     main.add_argument("-c", "--config-path", help="Path to config file")
     main.add_argument('-v', '--verbose', action='count', dest='verbosity', help="Be more verbose. Can be repeated for debugging", default=0)
     main.add_argument('--impersonate', metavar="USERNAME", help="Impersonate another user (username or email)", default=None)

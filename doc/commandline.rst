@@ -4,7 +4,7 @@ Command line interface
 .. argparse::
     :module: egnyte.__main__
     :func: create_main_parser
-    :prog: python -m egnyte
+    :prog: egnyte
     :nodefault:
 
 config subcommand
@@ -13,7 +13,7 @@ config subcommand
 .. argparse::
     :module: egnyte.__main__
     :func: create_main_parser
-    :prog: python -m egnyte
+    :prog: egnyte
     :path: config
     :nodefault:
 
@@ -23,6 +23,6 @@ audit subcommand
 .. argparse::
     :module: egnyte.__main__
     :func: create_main_parser
-    :prog: python -m egnyte
+    :prog: egnyte
     :path: audit
     :nodefault:

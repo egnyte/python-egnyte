@@ -131,7 +131,7 @@ See the full documentation or install, then use:
 
 .. code-block:: python
 
-    python -m egnyte -h
+    egnyte -h
 
 Create configuration
 ====================
@@ -140,14 +140,7 @@ Configuration file will be created in ~/.egnyte/config.json
 
 .. code-block:: python
 
-    python -m egnyte config create -d DOMAIN [-l LOGIN] [-p PASSWORD] -k API_KEY [-t ACCESS_TOKEN] [-T TIMEOUT]
-
-Set request timeout
-===================
-
-.. code-block:: python
-
-    python -m egnyte config update --timeout TIMEOUT_INTEGER
+    egnyte config create -d DOMAIN [-l LOGIN] [-p PASSWORD] -k API_KEY [-t ACCESS_TOKEN] [-T TIMEOUT]
 
 Dependencies
 ============
@@ -196,7 +189,7 @@ You can create this file manually or with following command:
 
 .. code-block:: python
 
-    python -m egnyte -c test_config.json config create -k <API_Key> -d <domain> -l <username> -p <password> -t <access_token>
+    egnyte -c test_config.json config create -k <API_Key> -d <domain> -l <username> -p <password> -t <access_token>
 
 Tests will be run against your domain on behalf on admin user.
 

@@ -39,7 +39,11 @@ args = dict(
     extras_require={
         'docs': ['sphinx', 'sphinx-argparse'],
     },
-    # TODO: add an entrypoint for a console script, or do we stick with 'python -m egnyte'?
+    entry_points={
+        "console_scripts": [
+            "egnyte=egnyte.__main__:main",
+        ],
+    },
 )
 
 if __name__ == '__main__':
