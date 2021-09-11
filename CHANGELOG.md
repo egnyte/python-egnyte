@@ -2,6 +2,7 @@
 
 ### Unreleased
 
+* Simplify cli usage - just call `egnyte` (but old-style `python -m egnyte` syntax still works too)
 * Fixed `cmd_test`. [PR #28](https://github.com/egnyte/python-egnyte/pull/28)
 
 Thanks to [@cobyiv](https://github.com/cobyiv) for their contribution!
