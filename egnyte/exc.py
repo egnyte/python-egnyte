@@ -200,3 +200,6 @@ no_content_ok = ErrorMapping(ok_statuses={HTTPStatus.OK, HTTPStatus.NO_CONTENT})
 created_ignore_existing = ErrorMapping(ok_statuses=(HTTPStatus.CREATED,), ignored_errors = [
     (u'Folder already exists at this location', {'http status': 403})
 ])
+deleted_ignore_not_existing = ErrorMapping(ok_statuses=(HTTPStatus.OK,), ignored_errors = [
+    ("Resource already doesn't exist", {'http status': 404})
+])
