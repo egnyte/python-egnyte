@@ -362,7 +362,7 @@ class Links(base.HasClient):
         """
         url = self._client.get_url(self._url_template)
         data = base.filter_none_values(dict(path=path, type=type, accessibility=accessibility, send_email=send_email,
-                                            copy_me=copy_me, notify=notify, add_filename=add_filename, link_to_current=link_to_current,
+                                            copy_me=copy_me, notify=notify, add_file_name=add_filename, link_to_current=link_to_current,
                                             expiry_clicks=expiry_clicks, expiry_date=base.date_format(expiry_date),
                                             recipients=recipients, message=message))
         response = exc.default.check_json_response(self._client.POST(url, data))
