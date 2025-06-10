@@ -336,6 +336,7 @@ class Group(base.Resource):
 class Links(base.HasClient):
     """Link management API"""
     _url_template = "pubapi/v1/links"
+    _url_v2_template = "pubapi/v2/links"
 
     def create(self, path, type, accessibility,
                recipients=None, send_email=None, message=None,
@@ -400,6 +401,29 @@ class Links(base.HasClient):
                                               offset=offset, count=count))
         json = exc.default.check_json_response(self._client.GET(url, params=params))
         return base.ResultList((Link(self._client, id=id) for id in json.get('ids', ())), json['total_count'], json['offset'])
+    
+    def list_v2(self, path=None, username=None, created_before=None, created_after=None, type=None, accessibility=None,
+                offset=None, count=None, link_type=None):
+        """
+        Search links that match following optional conditions:
+
+        * path: List links to this file or folder (Full absolute path of destination file or folder)
+        * username: List links created by this user (Any username from your Egnyte account)
+        * created_before: List links created before this date (datetime.date, or string in YYYY-MM-DD format)
+        * created_after: List links created after this date (datetime.date, or string in YYYY-MM-DD format)
+        * type: Links of selected type will be shown ('File' or 'Folder')
+        * accessibility: Links of selected accessibility will be shown ('Anyone', 'Password', 'Domain', or 'Recipients')
+        * offset: Start at this link, where offset=0 means start with first link.
+        * count: Send this number of links. If not specified, all links will be sent.
+
+        Returns a list of Link objects, with additional details.
+        """
+        url = self._client.get_url(self._url_v2_template)
+        params = base.filter_none_values(dict(path=path, username=username, created_before=base.date_format(created_before),
+                                              created_after=base.date_format(created_after), type=type, accessibility=accessibility,
+                                              offset=offset, count=count))
+        json = exc.default.check_json_response(self._client.GET(url, params=params))
+        return base.ResultList((Link(self._client, **link) for link in json.get('links', ())), json['count'], -1)
 
 
 class Users(base.HasClient):
