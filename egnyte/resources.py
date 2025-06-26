@@ -265,7 +265,7 @@ class User(base.Resource):
         base.Resource.delete(self)
 
     def update(self, email=None, familyName=None, givenName=None, active=None, sendInvite=None, authType=None,
-               userType=None, idpUserId=None, userPrincipalName=None):
+               role=None, userType=None, idpUserId=None, userPrincipalName=None):
         """
         Modify this user account.
         Optional parameters (no change if value is None):
@@ -283,7 +283,7 @@ class User(base.Resource):
         url = self._client.get_url(self._url_template, id=self.id)
         name = base.filter_none_values(dict(familyName=familyName, givenName=givenName)) or None
         data = base.filter_none_values(dict(email=email, active=active, name=name, sendInvite=sendInvite,
-                                            authType=authType, userType=userType, idpUserId=idpUserId,
+                                            authType=authType, role=role, userType=userType, idpUserId=idpUserId,
                                             userPrincipalName=userPrincipalName))
         json = exc.default.check_json_response(self._client.PATCH(url, data))
         self._update_attributes(json)
