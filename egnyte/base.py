@@ -172,8 +172,9 @@ class Resource(object):
             return (self._client is other._client and self._url == other._url)
         return NotImplemented
 
-    def delete(self):
-        exc.default.check_response(self._client.DELETE(self._url))
+    def delete(self, ignore_if_not_exists):
+        r = self._client.DELETE(self._url)
+        (exc.deleted_ignore_not_existing if ignore_if_not_exists else exc.default).check_response(r)
 
 
 def get_access_token(config):
